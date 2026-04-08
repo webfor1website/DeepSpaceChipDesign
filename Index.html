@@ -10,79 +10,105 @@
             padding: 0;
             background: #000;
             color: #fff;
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             text-align: center;
-            overflow-x: hidden;
         }
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 40px 20px;
         }
         h1 {
             font-size: 3.5rem;
             margin: 20px 0;
+            color: #ff00ff;
             text-transform: uppercase;
             letter-spacing: 4px;
         }
-        .photo-container {
-            margin: 40px auto;
-            max-width: 700px;
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin: 40px 0;
+        }
+        .option {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .option img {
+            width: 380px;
+            max-width: 100%;
             border: 6px solid #ff00ff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 0 40px rgba(255, 0, 255, 0.6);
+            border-radius: 15px;
+            box-shadow: 0 0 35px rgba(255, 0, 255, 0.6);
         }
-        .photo-placeholder {
-            width: 100%;
-            height: auto;
-            display: block;
-            background: #111;
+        .option:hover {
+            transform: scale(1.05);
         }
-        .upload-instructions {
-            margin-top: 15px;
-            font-size: 1.1rem;
-            color: #aaa;
+        .option h3 {
+            margin: 15px 0 0;
+            font-size: 1.4rem;
+            color: #ff00ff;
+        }
+        .active {
+            border-color: #00ff00 !important;
+            box-shadow: 0 0 40px rgba(0, 255, 0, 0.7) !important;
         }
         p {
             font-size: 1.4rem;
-            line-height: 1.6;
             max-width: 700px;
             margin: 30px auto;
+            line-height: 1.6;
         }
         footer {
-            margin-top: 80px;
-            padding: 20px;
-            font-size: 0.9rem;
+            margin-top: 60px;
             color: #555;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>elonsmomspussy.com</h1>
-        
-        <!-- PHOTO PLACEHOLDER - JUST REPLACE THE IMAGE -->
-        <div class="photo-container">
-            <img src="photo.jpg" 
-                 alt="Elon's Mom's Pussy" 
-                 class="photo-placeholder"
-                 onerror="this.src='https://picsum.photos/700/800'; this.alt='Placeholder Image';">
-        </div>
-        
-        <p class="upload-instructions">
-            👆 Upload your photo to the repo as <strong>photo.jpg</strong><br>
-            (or change the filename in the code above)
-        </p>
+        <h2>Choose Your View</h2>
 
-        <p>
-            Welcome to the most based website on the internet.<br>
-            Change this text however you want.
-        </p>
+        <div class="options">
+            <!-- Option 1 -->
+            <div class="option active" onclick="showImage(1)">
+                <img id="img1" src="photo1.jpg" alt="Option 1">
+                <h3>Option 1</h3>
+            </div>
+
+            <!-- Option 2 -->
+            <div class="option" onclick="showImage(2)">
+                <img id="img2" src="photo2.jpg" alt="Option 2">
+                <h3>Option 2</h3>
+            </div>
+        </div>
+
+        <p>Click either picture to make it the main one.<br>
+           Upload your own pics as <strong>photo1.jpg</strong> and <strong>photo2.jpg</strong></p>
     </div>
 
     <footer>
-        Hosted on GitHub Pages • elonsmomspussy.com
+        elonsmomspussy.com • GitHub Pages
     </footer>
+
+    <script>
+        function showImage(num) {
+            // Remove active from both
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            
+            // Add active to the clicked one
+            if (num === 1) {
+                document.getElementById('img1').parentElement.classList.add('active');
+            } else {
+                document.getElementById('img2').parentElement.classList.add('active');
+            }
+        }
+    </script>
 </body>
 </html>
