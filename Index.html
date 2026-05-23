@@ -96,21 +96,23 @@
 
         <!-- Panel 1: Gamma coupling -->
         <div class="viz-panel card active" id="viz-gamma">
+          <p class="viz-plain">In deep space, three things destroy chips slowly. Alone, each takes 100+ years. Together, they cause failure in under 30. This is why.</p>
           <div class="viz-header">
             <h3>Γ_coupling — Failure Cascade</h3>
             <p>Three failure mechanisms begin independently, then converge into a single synergistic failure point when Γ exceeds threshold.</p>
           </div>
-          <svg id="gamma-svg" viewBox="0 0 600 320" class="viz-svg" aria-label="Gamma coupling failure cascade"></svg>
+          <svg id="gamma-svg" viewBox="0 0 700 420" class="viz-svg" aria-label="Gamma coupling failure cascade"></svg>
           <button class="viz-replay" data-target="gamma">↺ Replay</button>
         </div>
 
         <!-- Panel 2: AXIOM entropy floor -->
         <div class="viz-panel card" id="viz-axiom">
+          <p class="viz-plain">AI that runs alone for 100 years gets dangerously overconfident. It thinks it knows things it can't possibly know. AXIOM forces it to stay humble — permanently, in hardware it can't override.</p>
           <div class="viz-header">
             <h3>AXIOM — Entropy Floor</h3>
-            <p>Drag to add observations. The Bayesian posterior concentrates — then the entropy floor prevents over-certainty.</p>
+            <p>Drag to add observations. The Bayesian posterior concentrates — then the entropy floor prevents dangerous over-certainty.</p>
           </div>
-          <canvas id="axiom-canvas" width="700" height="260" class="viz-canvas"></canvas>
+          <canvas id="axiom-canvas" width="700" height="300" class="viz-canvas"></canvas>
           <div class="axiom-controls">
             <label>Observations: <strong id="axiom-count">1</strong></label>
             <input type="range" id="axiom-slider" min="1" max="120" value="1" />
@@ -120,11 +122,12 @@
 
         <!-- Panel 3: HERALD -->
         <div class="viz-panel card" id="viz-herald">
+          <p class="viz-plain">A computer cluster drawing 40 megawatts doesn't just compute — it creates magnetic fields strong enough to knock a spacecraft off course. HERALD makes them talk to each other.</p>
           <div class="viz-header">
             <h3>HERALD — Compute–Attitude Coupling</h3>
             <p>Compute cluster firing induces attitude wobble via structural coupling. HERALD detects and suppresses it in real time.</p>
           </div>
-          <svg id="herald-svg" viewBox="0 0 640 280" class="viz-svg" aria-label="HERALD coupling isolation"></svg>
+          <svg id="herald-svg" viewBox="0 0 700 340" class="viz-svg" aria-label="HERALD coupling isolation"></svg>
           <button class="viz-replay" data-target="herald">↺ Replay</button>
         </div>
 

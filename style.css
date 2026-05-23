@@ -418,3 +418,16 @@ h1, h2, h3, h4 {
 .viz-replay:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
 
 @media (max-width: 640px) { .viz-panel { padding: 1.25rem; } .viz-tabs { gap: 0.35rem; } }
+
+/* ===== Viz plain-English callout ===== */
+.viz-plain {
+  font-size: 0.97rem;
+  line-height: 1.75;
+  color: rgba(220, 230, 240, 0.72);
+  border-left: 3px solid var(--accent);
+  padding: 0.75rem 1.1rem;
+  margin-bottom: 1.5rem;
+  background: rgba(29,111,232,0.06);
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+}
