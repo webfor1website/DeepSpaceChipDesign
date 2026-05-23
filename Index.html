@@ -81,6 +81,57 @@
     <div class="hero-scroll"><span></span></div>
   </section>
 
+  <!-- Visualizer -->
+  <section class="section viz-section fade-in" id="visualizer">
+    <div class="section-inner">
+      <div class="section-label">Interactive Diagrams</div>
+      <h2>Core Architecture Mechanisms</h2>
+      <p class="section-sub">Three key innovations. Explore each interactively.</p>
+      <div class="viz-tabs" role="tablist">
+        <button class="viz-tab active" data-tab="gamma" role="tab">Γ_coupling</button>
+        <button class="viz-tab" data-tab="axiom" role="tab">AXIOM Entropy Floor</button>
+        <button class="viz-tab" data-tab="herald" role="tab">HERALD</button>
+      </div>
+      <div class="viz-panels">
+
+        <!-- Panel 1: Gamma coupling -->
+        <div class="viz-panel card active" id="viz-gamma">
+          <div class="viz-header">
+            <h3>Γ_coupling — Failure Cascade</h3>
+            <p>Three failure mechanisms begin independently, then converge into a single synergistic failure point when Γ exceeds threshold.</p>
+          </div>
+          <svg id="gamma-svg" viewBox="0 0 600 320" class="viz-svg" aria-label="Gamma coupling failure cascade"></svg>
+          <button class="viz-replay" data-target="gamma">↺ Replay</button>
+        </div>
+
+        <!-- Panel 2: AXIOM entropy floor -->
+        <div class="viz-panel card" id="viz-axiom">
+          <div class="viz-header">
+            <h3>AXIOM — Entropy Floor</h3>
+            <p>Drag to add observations. The Bayesian posterior concentrates — then the entropy floor prevents over-certainty.</p>
+          </div>
+          <canvas id="axiom-canvas" width="700" height="260" class="viz-canvas"></canvas>
+          <div class="axiom-controls">
+            <label>Observations: <strong id="axiom-count">1</strong></label>
+            <input type="range" id="axiom-slider" min="1" max="120" value="1" />
+            <span id="axiom-floor-label" class="axiom-floor-label">⎯ Entropy floor active</span>
+          </div>
+        </div>
+
+        <!-- Panel 3: HERALD -->
+        <div class="viz-panel card" id="viz-herald">
+          <div class="viz-header">
+            <h3>HERALD — Compute–Attitude Coupling</h3>
+            <p>Compute cluster firing induces attitude wobble via structural coupling. HERALD detects and suppresses it in real time.</p>
+          </div>
+          <svg id="herald-svg" viewBox="0 0 640 280" class="viz-svg" aria-label="HERALD coupling isolation"></svg>
+          <button class="viz-replay" data-target="herald">↺ Replay</button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
   <script src="script.js"></script>
 </body>
 </html>
