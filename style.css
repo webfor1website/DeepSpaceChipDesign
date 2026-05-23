@@ -431,3 +431,55 @@ h1, h2, h3, h4 {
   border-radius: 0 6px 6px 0;
   font-style: italic;
 }
+
+/* ===== Prompt 6 — Dashboard Controls ===== */
+.viz-controls-bar {
+  display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap;
+  margin-bottom: 1.25rem; padding: 0.7rem 1rem;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px;
+}
+.viz-control-group { display: flex; align-items: center; gap: 0.55rem; }
+.viz-control-group label { font-size: 0.77rem; color: var(--text-muted); white-space: nowrap; }
+.viz-control-group input[type="range"] { width: 100px; accent-color: var(--accent); cursor: pointer; }
+.viz-control-group span { font-size: 0.77rem; color: var(--text); min-width: 36px; }
+.viz-stat { display: flex; flex-direction: column; align-items: center; gap: 0.05rem; }
+.stat-label { font-size: 0.67rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.stat-value { font-size: 1.25rem; font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #eef2f7; letter-spacing: 0.04em; min-width: 2ch; text-align: center; }
+.mission-badge {
+  font-size: 0.77rem; font-weight: 700; padding: 0.28rem 0.75rem;
+  border-radius: 20px; letter-spacing: 0.1em; border: 1px solid; transition: all 0.4s;
+}
+.badge-nominal   { color: #17b978; border-color: rgba(23,185,120,0.45);  background: rgba(23,185,120,0.1); }
+.badge-degrading { color: #e8c84a; border-color: rgba(232,200,74,0.45);  background: rgba(232,200,74,0.1); }
+.badge-failure   { color: #ff4444; border-color: rgba(255,68,68,0.45);   background: rgba(255,68,68,0.12); animation: badgePulse 0.55s ease-in-out 4; }
+@keyframes badgePulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+.node-tooltip {
+  position: absolute; pointer-events: none;
+  background: rgba(3,8,20,0.96); border: 1px solid rgba(74,144,232,0.4);
+  border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.82rem;
+  color: rgba(220,230,240,0.88); max-width: 230px; line-height: 1.55;
+  opacity: 0; transition: opacity 0.15s; z-index: 20;
+}
+.scenario-btns { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.scenario-btn {
+  flex: 1; padding: 0.5rem 1rem; font-size: 0.82rem; font-weight: 600;
+  font-family: 'Inter', sans-serif; border-radius: 6px; cursor: pointer;
+  transition: all 0.22s; letter-spacing: 0.05em;
+  border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+}
+.scenario-btn.active-no  { background: rgba(255,68,68,0.12);   border-color: rgba(255,68,68,0.55);   color: #ff7777; }
+.scenario-btn.active-yes { background: rgba(74,144,232,0.12);  border-color: rgba(74,144,232,0.55);  color: #5aadff; }
+.scenario-badge {
+  display: inline-block; margin-top: 0.7rem; padding: 0.32rem 0.85rem;
+  border-radius: 20px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em;
+}
+.badge-danger { background: rgba(255,68,68,0.14);  border: 1px solid rgba(255,68,68,0.45);  color: #ff6666; }
+.badge-safe   { background: rgba(74,144,232,0.14); border: 1px solid rgba(74,144,232,0.5);  color: #5aadff; }
+.herald-toggle-btn {
+  padding: 0.42rem 1rem; font-size: 0.82rem; font-weight: 700;
+  font-family: 'Inter', sans-serif; border-radius: 6px; cursor: pointer;
+  transition: all 0.25s; letter-spacing: 0.07em; border: 1px solid; white-space: nowrap;
+}
+.herald-on  { background: rgba(23,185,120,0.12); border-color: rgba(23,185,120,0.5);  color: #17b978; }
+.herald-off { background: rgba(255,68,68,0.12);  border-color: rgba(255,68,68,0.5);   color: #ff6666; }
+.herald-warning { font-size: 0.8rem; font-weight: 700; color: #ff5533; letter-spacing: 0.08em; transition: opacity 0.35s; }

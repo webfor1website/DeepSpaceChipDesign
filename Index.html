@@ -101,6 +101,16 @@
             <h3>Γ_coupling — Failure Cascade</h3>
             <p>Three failure mechanisms begin independently, then converge into a single synergistic failure point when Γ exceeds threshold.</p>
           </div>
+          <div class="viz-controls-bar">
+            <div class="viz-control-group">
+              <label>Speed</label>
+              <input type="range" id="gamma-speed" min="1" max="5" step="1" value="2" />
+              <span id="gamma-speed-label">1×</span>
+            </div>
+            <div class="viz-stat"><span class="stat-label">Years elapsed</span><span id="gamma-years" class="stat-value">0</span></div>
+            <div id="gamma-status" class="mission-badge badge-nominal">● NOMINAL</div>
+          </div>
+          <div id="gamma-tooltip" class="node-tooltip"></div>
           <svg id="gamma-svg" viewBox="0 0 700 420" class="viz-svg" aria-label="Gamma coupling failure cascade"></svg>
           <button class="viz-replay" data-target="gamma">↺ Replay</button>
         </div>
@@ -112,12 +122,17 @@
             <h3>AXIOM — Entropy Floor</h3>
             <p>Drag to add observations. The Bayesian posterior concentrates — then the entropy floor prevents dangerous over-certainty.</p>
           </div>
+          <div class="scenario-btns">
+            <button class="scenario-btn active-yes" id="axiom-btn-with">WITH AXIOM</button>
+            <button class="scenario-btn" id="axiom-btn-without">WITHOUT AXIOM</button>
+          </div>
           <canvas id="axiom-canvas" width="700" height="300" class="viz-canvas"></canvas>
           <div class="axiom-controls">
             <label>Observations: <strong id="axiom-count">1</strong></label>
             <input type="range" id="axiom-slider" min="1" max="120" value="1" />
             <span id="axiom-floor-label" class="axiom-floor-label">⎯ Entropy floor active</span>
           </div>
+          <div><span id="axiom-badge" class="scenario-badge" style="display:none"></span></div>
         </div>
 
         <!-- Panel 3: HERALD -->
@@ -126,6 +141,15 @@
           <div class="viz-header">
             <h3>HERALD — Compute–Attitude Coupling</h3>
             <p>Compute cluster firing induces attitude wobble via structural coupling. HERALD detects and suppresses it in real time.</p>
+          </div>
+          <div class="viz-controls-bar">
+            <div class="viz-control-group">
+              <label>Power Level</label>
+              <input type="range" id="herald-power" min="1" max="100" value="20" />
+              <span id="herald-power-label">20 MW</span>
+            </div>
+            <button id="herald-toggle" class="herald-toggle-btn herald-on">HERALD ON</button>
+            <div id="herald-warning" class="herald-warning" style="opacity:0">⚠ ATTITUDE FAILURE IMMINENT</div>
           </div>
           <svg id="herald-svg" viewBox="0 0 700 340" class="viz-svg" aria-label="HERALD coupling isolation"></svg>
           <button class="viz-replay" data-target="herald">↺ Replay</button>
