@@ -461,3 +461,64 @@ document.querySelectorAll('.fade-in').forEach((el, i) => { el.style.transitionDe
   },{threshold:0.12}).observe(vizSec);
 
 })();
+
+// ===== Papers expand =====
+(function () {
+  const expanded = document.getElementById('paper-expanded');
+  const content  = document.getElementById('paper-expanded-content');
+  const closeBtn = document.getElementById('paper-close');
+  if (!expanded || !content) return;
+
+  const DATA = {
+    p1: {
+      num:'P1', badgeClass:'pb-axiom', badge:'AXIOM',
+      title:'Mandatory Epistemic Humility',
+      summary:'How to stop AI from becoming dangerously overconfident on century-scale missions.',
+      body:'<p>Autonomous systems operating on century-scale missions accumulate observations far beyond any training distribution. Without enforced limits, Bayesian posterior distributions collapse to near-zero entropy \u2014 the system believes it knows everything.</p><p>This paper introduces the AXIOM entropy floor: a hardware-enforced minimum uncertainty threshold that prevents catastrophic overconfidence. The floor is not a software parameter \u2014 it is a physical constant of the compute substrate.</p><h4>Key Findings</h4><ul><li>Posterior collapse occurs in standard Bayesian systems after ~40 years of uninterrupted observation</li><li>Software-based uncertainty floors are bypassable via self-modification</li><li>AXIOM floor reduces mission-critical decision errors by 3.4\u00d7 on 100-year simulations</li></ul>',
+    },
+    p2: {
+      num:'P2', badgeClass:'pb-gamma', badge:'\u0393_coupling',
+      title:'Synergistic Failure in Interconnects',
+      summary:'Why standard chip reliability models are wrong by 100\u00d7 for 50+ year deep space missions.',
+      body:'<p>Standard reliability models (MIL-HDBK-217, Telcordia) treat failure mechanisms as independent. In deep space environments, this is catastrophically wrong. Electromigration, thermo-mechanical fatigue, and radiation damage interact non-linearly \u2014 each accelerates the others.</p><p>The \u0393_coupling coefficient quantifies this synergistic amplification. Above the coupling threshold, mission lifetime drops from centuries to decades.</p><h4>Key Findings</h4><ul><li>Independent models overestimate MTTF by 100\u2013300\u00d7 for 50-year missions</li><li>\u0393_coupling threshold occurs around year 28 under standard deep space conditions</li><li>Redesigning interconnect geometry to minimize \u0393 extends mission life by 2.4\u00d7</li></ul>',
+    },
+    p3: {
+      num:'P3', badgeClass:'pb-herald', badge:'HERALD',
+      title:'ML Schedulers &amp; Attitude Control',
+      summary:'How a 40MW compute cluster can knock a spacecraft off course \u2014 and how to stop it.',
+      body:'<p>A 40MW neural network training run produces transient electromagnetic fields measurable at the spacecraft\u2019s attitude control sensors. Burst inference workloads create periodic torque perturbations that accumulate over time, degrading navigation accuracy.</p><p>HERALD creates a feedback channel between the ML scheduler and attitude control, allowing workloads to be shaped to cancel rather than amplify structural resonances.</p><h4>Key Findings</h4><ul><li>Unmanaged 40MW inference causes 0.003\u00b0 attitude drift per operational hour</li><li>Over 100 years, accumulated drift exceeds mission-critical thresholds by 8\u00d7</li><li>HERALD reduces attitude perturbation to below sensor noise floor at all tested power levels</li></ul>',
+    },
+    p4: {
+      num:'P4', badgeClass:'pb-fab', badge:'FABRICATION',
+      title:'Self-Replicating Architecture',
+      summary:'A complete blueprint for a spacecraft that builds its own replacement parts.',
+      body:'<p>Any system operating for 100+ years will exhaust its spare parts. Self-replication is not a luxury \u2014 it is a mission-critical requirement. This paper presents a complete fabrication architecture based on in-situ resource utilization and autonomous chip manufacturing.</p><p>The system can produce replacement compute substrates from asteroid-derived silicon with a replication fidelity of &gt;99.97% per generation.</p><h4>Key Findings</h4><ul><li>Complete chip fabrication cycle achievable with 280 kg of dedicated hardware mass</li><li>First replication event possible within 8 years using belt asteroid resources</li><li>Replication fidelity degrades gracefully \u2014 12 generations before performance drops below threshold</li></ul>',
+    },
+    p5: {
+      num:'P5', badgeClass:'pb-pioneer', badge:'PIONEER',
+      title:'Civilization Seed Architecture',
+      summary:'The full long-range extrapolation \u2014 from compute platform to interstellar civilization.',
+      body:'<p>If a self-replicating, self-governing compute platform can survive 100 years and begin replication, what does the trajectory look like at 500 years? At 1,000? This paper performs the full extrapolation.</p><p>A single Pioneer-class seed launched in 2050 reaches a civilization-seed threshold \u2014 autonomous resource extraction, manufacturing, governance, and expansion capability \u2014 within 150 years of deployment.</p><h4>Key Findings</h4><ul><li>Replication doubling time stabilizes at ~11 years under optimal resource conditions</li><li>Constitutional governance frameworks remain coherent for 8+ replication generations without human intervention</li><li>Civilization-seed threshold reachable by 2200 from a 2050 launch</li></ul>',
+    },
+  };
+
+  document.querySelectorAll('.paper-read-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = DATA[btn.dataset.target];
+      if (!p) return;
+      content.innerHTML =
+        '<div class="pex-header"><span class="paper-num" style="position:static;font-size:1.1rem;color:var(--accent);opacity:0.85">' + p.num + '</span><span class="paper-badge ' + p.badgeClass + '">' + p.badge + '</span></div>' +
+        '<h2 class="pex-title">' + p.title + '</h2>' +
+        '<p class="pex-summary">' + p.summary + '</p>' +
+        '<div class="pex-body">' + p.body + '</div>';
+      expanded.classList.add('open');
+      setTimeout(() => expanded.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    });
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', () => {
+    expanded.classList.remove('open');
+    const sec = document.getElementById('papers');
+    if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+})();
