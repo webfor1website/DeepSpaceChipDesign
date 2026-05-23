@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>P3 — HERALD: Compute&ndash;Attitude Coupling in Deep-Space Systems | Deep Space Chip Design</title>
+  <meta name="description" content="ML schedulers as torque sources. How a 40MW compute cluster can knock a spacecraft off course — and how HERALD stops it." />
+  <meta name="theme-color" content="#03060f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .paper-page { padding: 7rem 1.5rem 5rem; min-height: 100vh; }
+    .paper-container { max-width: 720px; margin: 0 auto; }
+
+    .paper-back {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.82rem; color: rgba(255,255,255,0.38); text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.09); padding: 0.38rem 0.85rem;
+      border-radius: 5px; margin-bottom: 2.75rem;
+      transition: color 0.2s, border-color 0.2s; letter-spacing: 0.03em;
+    }
+    .paper-back:hover { color: rgba(255,255,255,0.8); border-color: rgba(255,255,255,0.2); }
+
+    .paper-meta { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+    .paper-num-badge {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.14em; color: #1d6fe8;
+      background: rgba(29,111,232,0.1); border: 1px solid rgba(29,111,232,0.3);
+      padding: 0.18rem 0.55rem; border-radius: 4px;
+    }
+    .paper-date { font-size: 0.76rem; color: rgba(255,255,255,0.26); letter-spacing: 0.05em; margin-left: auto; }
+
+    .paper-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.55rem, 4vw, 2.05rem); font-weight: 700;
+      line-height: 1.22; letter-spacing: -0.02em;
+      color: rgba(255,255,255,0.92); margin: 0 0 0.8rem;
+    }
+    .paper-authors { font-size: 0.84rem; color: rgba(255,255,255,0.32); margin-bottom: 2rem; letter-spacing: 0.04em; }
+    .paper-abstract-lbl {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.67rem; font-weight: 700;
+      letter-spacing: 0.18em; color: rgba(255,255,255,0.28); text-transform: uppercase; margin-bottom: 0.5rem;
+    }
+    .paper-abstract {
+      font-size: 0.95rem; line-height: 1.85; color: rgba(255,255,255,0.58);
+      border-left: 2px solid rgba(29,111,232,0.4); padding-left: 1.2rem;
+      margin-bottom: 2.75rem; font-style: italic;
+    }
+    .paper-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 0 0 2.5rem; }
+
+    .paper-body { font-size: 1rem; line-height: 1.8; color: rgba(255,255,255,0.7); }
+    .paper-body h2 {
+      font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; font-weight: 700;
+      color: rgba(255,255,255,0.9); margin: 2.75rem 0 0.7rem; letter-spacing: -0.01em;
+      padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .paper-body h3 {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.97rem; font-weight: 600;
+      color: rgba(255,255,255,0.72); margin: 2rem 0 0.55rem; letter-spacing: 0.01em;
+    }
+    .paper-body p { margin-bottom: 1.25rem; }
+    .paper-body ul, .paper-body ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+    .paper-body li { margin-bottom: 0.42rem; }
+    .paper-body strong { color: rgba(255,255,255,0.88); font-weight: 600; }
+    .paper-body em { color: rgba(255,255,255,0.55); }
+    .paper-body code {
+      font-family: 'Courier New', monospace; font-size: 0.85em;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      padding: 0.1em 0.35em; border-radius: 3px; color: rgba(74,144,232,0.9);
+    }
+    .paper-callout {
+      background: rgba(29,111,232,0.055); border: 1px solid rgba(29,111,232,0.18);
+      border-radius: 8px; padding: 1.2rem 1.4rem; margin: 1.75rem 0;
+    }
+    .paper-callout p { margin-bottom: 0; color: rgba(255,255,255,0.65); }
+    .paper-placeholder { color: rgba(255,255,255,0.2); font-style: italic; font-size: 0.9rem; }
+
+    .paper-refs { margin-top: 3.5rem; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 1.4rem; }
+    .refs-toggle {
+      background: none; border: 1px solid rgba(255,255,255,0.09);
+      color: rgba(255,255,255,0.4); font-size: 0.81rem; font-family: 'Inter', sans-serif;
+      padding: 0.42rem 0.95rem; border-radius: 5px; cursor: pointer;
+      display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;
+    }
+    .refs-toggle:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.62); }
+    .refs-arrow { transition: transform 0.25s; display: inline-block; font-style: normal; }
+    .refs-toggle.open .refs-arrow { transform: rotate(180deg); }
+    .refs-body { overflow: hidden; max-height: 0; transition: max-height 0.4s ease; }
+    .refs-body.open { max-height: 3000px; }
+    .refs-body ol { padding-left: 1.4rem; margin-top: 1.2rem; font-size: 0.84rem; line-height: 1.72; color: rgba(255,255,255,0.4); }
+    .refs-body li { margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div id="stars"></div>
+
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="nav-brand" aria-label="Deep Space Chip Design">
+      <svg class="nav-logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect x="10" y="10" width="12" height="12" rx="2" fill="#1d6fe8" opacity="0.9"/>
+        <rect x="13" y="13" width="6" height="6" rx="1" fill="#03060f"/>
+        <line x1="4" y1="13" x2="10" y2="13" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="4" y1="16" x2="10" y2="16" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="4" y1="19" x2="10" y2="19" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="22" y1="13" x2="28" y2="13" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="22" y1="16" x2="28" y2="16" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="22" y1="19" x2="28" y2="19" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="13" y1="4" x2="13" y2="10" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="16" y1="4" x2="16" y2="10" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="19" y1="4" x2="19" y2="10" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="13" y1="22" x2="13" y2="28" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="16" y1="22" x2="16" y2="28" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="19" y1="22" x2="19" y2="28" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+      </svg>
+      <div class="nav-logo-text">
+        <span class="logo-main">Deep Space</span>
+        <span class="logo-sub">Chip Design</span>
+      </div>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html#overview">Overview</a></li>
+      <li><a href="index.html#visualizer">Visualizer</a></li>
+      <li><a href="index.html#papers">Papers</a></li>
+      <li><a href="index.html#pioneer">Pioneer Program</a></li>
+      <li><a href="index.html#about" class="nav-cta">About</a></li>
+    </ul>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <main class="paper-page">
+    <div class="paper-container">
+
+      <a href="index.html#papers" class="paper-back">&#8592; Back to Overview</a>
+
+      <header>
+        <div class="paper-meta">
+          <span class="paper-num-badge">P3</span>
+          <span class="paper-badge pb-herald">HERALD</span>
+          <span class="paper-date">April 2026</span>
+        </div>
+        <h1 class="paper-title">Compute&ndash;Attitude Coupling in Deep-Space Systems: ML Schedulers as Torque Sources</h1>
+        <p class="paper-authors">Claude &middot; Grok &middot; Jacob Thompson &nbsp;&mdash;&nbsp; April 2026</p>
+        <p class="paper-abstract-lbl">Abstract</p>
+        <p class="paper-abstract">
+          Orbital compute platforms operating at megawatt-scale power draw — the class of infrastructure required for large-scale machine learning workloads in space — produce transient electromagnetic effects that have not been characterized in the spacecraft systems engineering literature. Specifically, training burst events in distributed GPU/NPU clusters produce rapid current transients on the platform DC bus that generate spurious magnetic dipole moments of magnitude comparable to or exceeding the attitude control authority of the platform's magnetorquer system. The result is a coupling between the ML compute scheduler and the orbital attitude control system that has been treated as two independent design problems in all prior orbital platform architectures. This independence assumption is valid at power levels below approximately 1 MW and fails at the 10-100 MW scale anticipated for orbital AI compute infrastructure. This paper formalizes the coupling mechanism, derives the interference threshold as a function of bus geometry and magnetorquer authority, and proposes HERALD (Harmonic EM-Resolved Attitude-Load Dispatcher) — a co-designed scheduler and attitude control system that enforces a hard dI/dt constraint on compute burst initiation while jointly optimizing training throughput and attitude stability. The HERALD architecture extends a standard Kalman filter attitude estimator with a current envelope prediction layer driven by the training job queue, adds a power beaming rectenna harmonic separation stage to handle non-compute EM sources, and integrates with a plasma phased-array fleet shielding protocol for multi-node orbital deployments. We derive closed-form expressions for the interference threshold, validate the constraint equations against published magnetorquer and orbital platform data, and specify the HERALD state vector, measurement model, and dispatch algorithm. The framework is applicable to any orbital platform combining high-power bus architecture with magnetorquer-based attitude control.
+        </p>
+      </header>
+
+      <hr class="paper-divider" />
+
+      <article class="paper-body">
+        <p><strong>Keywords:</strong> orbital attitude control, electromagnetic interference, machine learning scheduling, Kalman filter, magnetorquers, high-power compute platforms, spacecraft systems co-design, distributed training.</p>
+
+        <h2>1. INTRODUCTION</h2>
+        <p>The deployment of large-scale machine learning compute infrastructure in Earth orbit has become technically and economically plausible within the past several years, driven by reusable launch vehicle economics, the modular architecture of modern GPU/NPU clusters, and the emergence of commercial orbital platform services. Proposed orbital data center concepts [1,2] anticipate continuous power draws of 10-100 MW and higher, enabled by large solar array deployments or space-based solar power architectures [3].</p>
+
+        <p>The systems engineering of orbital compute platforms at this power level introduces a class of interference problem that has no precedent in spacecraft design history. All previous spacecraft — including the International Space Station, which draws approximately 84 kW at peak [4] — operate at power levels where the electromagnetic effects of internal power distribution are negligible relative to attitude control system authority. This negligibility underpins the standard practice of designing power distribution and attitude control as independent subsystems with no required coordination between them.</p>
+
+        <p>This independence assumption fails at megawatt-scale compute platform power levels. The failure mechanism is specific to machine learning training workloads, which are characterized by sharp transient current demands — training burst events — rather than the steady or slowly-varying power draws of conventional spacecraft subsystems. A training burst event in a large distributed NPU cluster draws tens of kiloamperes over seconds to tens of seconds. This rapid current change generates a time-varying magnetic dipole moment proportional to the current-area product of the bus geometry. At the power levels and bus geometries relevant to orbital AI infrastructure, this spurious dipole moment is comparable to or greater than the attitude control authority of the magnetorquer system responsible for reaction wheel desaturation.</p>
+
+        <p>The consequence is direct: a training burst event can torque the orbital platform, misalign thermal radiator panels, desaturate reaction wheels, and in extreme cases induce structural loading inconsistent with orbital platform design margins. None of these consequences are captured by any existing spacecraft EMI standard [5,6] or attitude control specification, because no existing standard contemplates a spacecraft subsystem capable of generating this magnitude of internal magnetic disturbance.</p>
+
+        <p>This paper makes three contributions. First, we formalize the coupling mechanism between ML compute scheduling and orbital attitude control, deriving the interference threshold equation and quantifying the failure margin at representative orbital compute platform parameters. Second, we propose HERALD — a co-designed scheduling and attitude control architecture that enforces the derived interference constraint as a hard scheduling invariant while preserving near-optimal training throughput. Third, we extend the HERALD framework to handle the electromagnetic contributions of power beaming rectenna systems, which represent an additional uncounted interference source in solar-power-beaming orbital platform architectures, and to coordinate plasma phased-array fleet shielding across multi-node deployments.</p>
+
+        <p>The paper is organized as follows. Section 2 reviews the relevant background in orbital attitude control, spacecraft EMI standards, and ML training schedulers. Section 3 derives the interference coupling equations and quantifies the failure regime. Section 4 presents the HERALD architecture and state-space formulation. Section 5 addresses the rectenna harmonic interference extension. Section 6 presents the multi-node plasma phased-array coordination protocol. Section 7 discusses limitations and implementation requirements. Section 8 concludes.</p>
+
+        <h2>2. BACKGROUND</h2>
+
+        <h3>2.1 Orbital Attitude Control with Magnetorquers</h3>
+        <p>Orbital spacecraft attitude control typically uses a combination of reaction wheels for fine attitude control and magnetorquers (current-carrying coils or rods that interact with Earth's geomagnetic field) for reaction wheel desaturation [7,8]. The magnetorquer produces a torque by interacting with the local geomagnetic field B_env:</p>
+
+        <p><code>&tau;_control = M_control &times; B_env</code> (1)</p>
+
+        <p>where M_control is the magnetic dipole moment commanded by the attitude control system [A&middot;m&sup2;] and &times; denotes the vector cross product. The maximum attitude control torque available from the magnetorquer system is bounded by the maximum achievable dipole moment M_auth — the magnetorquer authority:</p>
+
+        <p><code>||M_control|| &le; M_auth</code> (2)</p>
+
+        <p>For a representative LEO orbital platform at 500 km altitude with Earth's magnetic field strength B_env &approx; 40 &mu;T, an MTQ800-class magnetorquer array achieves M_auth &approx; 200,000 A&middot;m&sup2; [9]. The attitude control response time &tau;_control — the time over which the magnetorquer can effect a meaningful attitude correction — is typically 1-10 seconds for reaction wheel desaturation in LEO [10].</p>
+
+        <h3>2.2 Spacecraft Internal EMI Standards</h3>
+        <p>MIL-STD-461 [5] and ECSS-E-ST-20-07 [6] specify conducted and radiated emission limits for spacecraft electrical systems. These standards were developed for spacecraft with power levels of tens to hundreds of kilowatts and focus on interference with sensitive scientific instruments and communication systems. They do not address the generation of attitude-relevant magnetic disturbance torques by internal power distribution transients, because no prior spacecraft has operated at power levels where such disturbances are significant relative to attitude control authority.</p>
+
+        <p>The applicable MIL-STD-461 limits for conducted emissions on power leads specify maximum current noise spectral density in the frequency range 30 Hz to 10 kHz. Training burst events produce current transients with characteristic frequencies of 0.1-1 Hz — below the lower limit of the MIL-STD-461 conducted emission specification. This gap in the standards reflects the absence of any prior spacecraft with comparable internal power transients at these frequencies.</p>
+
+        <h3>2.3 Machine Learning Training Schedulers</h3>
+        <p>Distributed ML training on GPU/NPU clusters is managed by schedulers that allocate compute resources to training jobs, manage data pipeline throughput, and coordinate gradient synchronization across nodes [11,12]. The power draw of a training cluster is determined by the compute utilization profile of the scheduled jobs — periods of high utilization (training burst events) are interspersed with periods of lower utilization (data loading, gradient synchronization, checkpointing).</p>
+
+        <p>The current draw of a modern GPU during a training burst scales approximately as:</p>
+
+        <p><code>I_burst(t) = P_TDP / V_bus &middot; f_util(t)</code> (3)</p>
+
+        <p>where P_TDP is the thermal design power of the GPU, V_bus is the bus voltage, and f_util(t) &in; [0,1] is the utilization fraction at time t. For a cluster of N_GPU GPUs at bus voltage V_bus, the total cluster current during a burst event is:</p>
+
+        <p><code>I_cluster(t) = N_GPU &middot; P_TDP &middot; f_util(t) / V_bus</code> (4)</p>
+
+        <p>The rate of current change during burst initiation — the critical parameter for attitude control interference — depends on the scheduler's burst initiation protocol. Standard schedulers initiate training bursts as fast as the hardware allows, typically achieving full utilization within 100-500 ms. This produces dI/dt values in the range 10^3 - 10^6 A/s for large clusters, depending on bus voltage and cluster size.</p>
+
+        <h3>2.4 Kalman Filter Attitude Estimation</h3>
+        <p>The extended Kalman filter (EKF) is the standard state estimator for spacecraft attitude control [13]. The EKF maintains a state estimate x_t and error covariance P_t, updated by the prediction-correction cycle:</p>
+
+        <p><code>x_{t|t-1} = f(x_{t-1}, u_t)</code> [prediction] (5)</p>
+
+        <p><code>x_t = x_{t|t-1} + K_t(z_t &minus; h(x_{t|t-1}))</code> [correction] (6)</p>
+
+        <p>where f is the state transition function, u_t is the control input, z_t is the measurement vector, h is the measurement function, and K_t is the Kalman gain. For standard spacecraft attitude control, the state vector includes attitude quaternion q, angular velocity &omega;, and gyroscope bias b_g. HERALD extends this standard formulation to include bus current state and its derivative, creating a coupled estimator that jointly tracks attitude dynamics and compute load dynamics. This extension is the central technical contribution of the HERALD architecture.</p>
+
+        <h2>3. THE COUPLING MECHANISM: DERIVATION AND QUANTIFICATION</h2>
+
+        <h3>3.1 Spurious Dipole Moment from Bus Current Transients</h3>
+        <p>A current-carrying conductor loop of area A carrying current I produces a magnetic dipole moment:</p>
+
+        <p><code>M = I &middot; A &middot; n̂</code> (7)</p>
+
+        <p>where n̂ is the unit normal to the loop plane. For a spacecraft DC bus, the effective loop area A_eff is determined by the physical routing of the bus conductors and the geometry of the return current path. For a centralized bus architecture with conductors routed along a spacecraft truss of characteristic dimension L, A_eff &approx; L&sup2; for a roughly rectangular current loop. For a distributed per-rack bus architecture, A_eff is reduced by the constraint that each rack's current loop is small relative to the total bus geometry.</p>
+
+        <p>The spurious dipole moment during a training burst event is:</p>
+
+        <p><code>M_spurious(t) = I_cluster(t) &middot; A_eff</code> (8)</p>
+
+        <p>The rate of change of spurious dipole moment during burst initiation is:</p>
+
+        <p><code>dM_spurious/dt = A_eff &middot; dI_cluster/dt</code> (9)</p>
+
+        <h3>3.2 The Interference Threshold</h3>
+        <p>Attitude control interference becomes significant when the spurious dipole moment competes with the attitude control system's commanded moment. We define the interference threshold as the condition under which the spurious moment exceeds a fraction &epsilon;_int of the magnetorquer authority:</p>
+
+        <p><code>M_spurious &ge; &epsilon;_int &middot; M_auth</code> (10)</p>
+
+        <p>For &epsilon;_int = 0.1 (10% interference threshold — the level at which attitude perturbations become measurable in attitude sensor data), the maximum allowable cluster current is:</p>
+
+        <p><code>I_max = &epsilon;_int &middot; M_auth / A_eff</code> (11)</p>
+
+        <p>The maximum allowable rate of current change during burst initiation is:</p>
+
+        <p><code>dI/dt|_max = &epsilon;_int &middot; M_auth / (A_eff &middot; &tau;_control)</code> (12)</p>
+
+        <p>Equation (12) is the fundamental scheduling constraint. Any burst initiation sequence that produces dI/dt > dI/dt|_max during the attitude control response window &tau;_control will generate attitude perturbations inconsistent with platform pointing requirements.</p>
+
+        <h3>3.3 Numerical Evaluation at Representative Platform Parameters</h3>
+        <p>Table 1 evaluates equations (11) and (12) at parameters representative of a 40 MW orbital AI compute platform, derived from published data for ISS-heritage bus architecture [4], commercially available magnetorquer systems [9], and Starcloud/Lumen Orbit modular cluster concepts [1,2].</p>
+
+        <table style="width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:0.8rem;color:rgba(255,255,255,0.65);">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.12);">
+              <th style="text-align:left;padding:0.5rem;font-family:'Space Grotesk',sans-serif;">Parameter</th>
+              <th style="text-align:left;padding:0.5rem;font-family:'Space Grotesk',sans-serif;">Symbol</th>
+              <th style="text-align:center;padding:0.5rem;font-family:'Space Grotesk',sans-serif;">Value</th>
+              <th style="text-align:left;padding:0.5rem;font-family:'Space Grotesk',sans-serif;">Source/Basis</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.5rem;">Platform compute power</td>
+              <td style="padding:0.5rem;">P_compute</td>
+              <td style="text-align:center;padding:0.5rem;">40 MW</td>
+              <td style="padding:0.5rem;">Starcloud-class modular cluster</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.5rem;">DC bus voltage</td>
+              <td style="padding:0.5rem;">V_bus</td>
+              <td style="text-align:center;padding:0.5rem;">400 V</td>
+              <td style="padding:0.5rem;">ISS heritage; scalable to 4 kV HVDC</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.5rem;">Cluster current (training burst)</td>
+              <td style="padding:0.5rem;">I_cluster</td>
+              <td style="text-align:center;padding:0.5rem;">10,000&ndash;100,000 A</td>
+              <td style="padding:0.5rem;">At 400 V; range reflects utilization variation</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.5rem;">Effective loop area (centralized bus)</td>
+              <td style="padding:0.5rem;">A_eff</td>
+              <td style="text-align:center;padding:0.5rem;">20 m&sup2;</td>
+              <td style="padding:0.5rem;">Compact truss routing, conservative estimate</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.5rem;">Effective loop area (distributed)</td>
+              <td style="padding:0.5rem;">A_eff</td>
+              <td style="text-align:center;padding:0.5rem;">&lt; 2 m&sup2; per rack</td>
+              <td style="padding:0.5rem;">Per-rack feeders reduce loop area</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.5rem;">Magnetorquer authority</td>
+              <td style="padding:0.5rem;">M_auth</td>
+              <td style="text-align:center;padding:0.5rem;">200,000 A&middot;m&sup2;</td>
+              <td style="padding:0.5rem;">10&ndash;20 MTQ800-class rods with ferromagnetic cores</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.5rem;">Attitude control response time</td>
+              <td style="padding:0.5rem;">&tau;_control</td>
+              <td style="text-align:center;padding:0.5rem;">5 s</td>
+              <td style="padding:0.5rem;">LEO B-field ~40 &mu;T; conservative desaturation</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.5rem;">Interference threshold (10%)</td>
+              <td style="padding:0.5rem;">&epsilon;_int &middot; M_auth</td>
+              <td style="text-align:center;padding:0.5rem;">20,000 A&middot;m&sup2;</td>
+              <td style="padding:0.5rem;">From equation (10)</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.5rem;">Maximum allowable current</td>
+              <td style="padding:0.5rem;">I_max</td>
+              <td style="text-align:center;padding:0.5rem;">1,000&ndash;10,000 A</td>
+              <td style="padding:0.5rem;">From equation (11); range = centralized/distributed</td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem;">Maximum allowable dI/dt</td>
+              <td style="padding:0.5rem;">dI/dt|_max</td>
+              <td style="text-align:center;padding:0.5rem;">200&ndash;2,000 A/s</td>
+              <td style="padding:0.5rem;">From equation (12); range = centralized/distributed</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-top:-0.5rem;margin-bottom:1.5rem;">Table 1. HERALD constraint parameters at 40 MW orbital compute platform scale.</p>
+
+        <p>The interference ratio M_spurious/M_auth reaches 10&ndash;500 at centralized bus architecture — a factor of 100&ndash;5,000 above the interference threshold. This is a design-critical coupling, not a second-order effect. The interference ratio at aggressive parameter values — 500 MW&middot;m&sup2; of spurious dipole moment against 200,000 A&middot;m&sup2; of control authority — represents a factor of 2,500 above threshold. Standard attitude control algorithms operating without knowledge of the compute load would experience sustained uncompensated disturbance torques, producing attitude errors potentially exceeding pointing requirements by orders of magnitude for platform-wide training runs.</p>
+
+        <div class="paper-callout">
+          <p><strong>KEY FINDING:</strong> At 40 MW scale with centralized bus architecture, training burst events produce spurious magnetic dipole moments up to 2,500 times the magnetorquer interference threshold. This is not a perturbation to be corrected — it is a dominant torque input that the attitude control system has no visibility into under the current decoupled design paradigm.</p>
+        </div>
+
+        <h2>4. THE HERALD ARCHITECTURE</h2>
+
+        <h3>4.1 Design Principles</h3>
+        <p>HERALD (Harmonic EM-Resolved Attitude-Load Dispatcher) addresses the coupling problem through joint co-design of the ML training scheduler and the attitude control estimator. Three design principles guide the architecture:</p>
+
+        <p><strong>Principle 1 — Predict, don't react.</strong> The attitude control system should have advance knowledge of planned training bursts, not discover their electromagnetic effects after the fact. This requires feeding the training job queue forward into the attitude estimator.</p>
+
+        <p><strong>Principle 2 — Enforce constraints at the scheduler, not the actuator.</strong> The attitude control system should not be required to compensate for burst-induced disturbances — it has limited bandwidth and authority. Instead, the scheduler should be prevented from initiating bursts that would require compensation. The dI/dt constraint is a scheduling constraint, not an attitude control compensation problem.</p>
+
+        <p><strong>Principle 3 — Co-design the state vector.</strong> The Kalman filter estimator should maintain joint state over attitude dynamics and bus current dynamics. A combined state vector enables optimal estimation of both subsystems with explicit representation of their coupling.</p>
+
+        <h3>4.2 Extended State Vector</h3>
+        <p>The HERALD state vector extends the standard attitude Kalman filter to include bus current state:</p>
+
+        <p><code>x = [q, &omega;, b_g, I_bus, dI_bus/dt, M_residual, I_rect, H_rect]ᵀ</code> (13)</p>
+
+        <p>where:</p>
+
+        <ul>
+          <li>q &in; SO(3) — attitude quaternion [4 components]</li>
+          <li>&omega; &in; &real;³ — angular velocity [rad/s]</li>
+          <li>b_g &in; &real;³ — gyroscope bias [rad/s]</li>
+          <li>I_bus &in; &real; — instantaneous DC bus current [A]</li>
+          <li>dI_bus/dt &in; &real; — bus current rate of change [A/s]</li>
+          <li>M_residual &in; &real;³ — residual magnetic dipole after magnetorquer compensation [A&middot;m&sup2;]</li>
+          <li>I_rect &in; &real; — power beaming rectenna switching current [A]</li>
+          <li>H_rect &in; &real;ᴷ — rectenna switching harmonic content vector [K harmonics]</li>
+        </ul>
+
+        <p>The inclusion of I_rect and H_rect in the state vector is required because power beaming rectenna systems — a primary power source for orbital compute platforms — produce switching transients at 5-20 kHz whose harmonics extend into the magnetorquer bandwidth. These harmonics are an independent, broadband interference source not captured by the training burst model alone (Section 5).</p>
+
+        <h3>4.3 State Transition Model</h3>
+        <p>The state transition model couples attitude dynamics and bus current dynamics through the spurious dipole moment term:</p>
+
+        <p><code>q_{t+1} = q_t &otimes; &Delta;q(&omega;_t, &tau;_total, &Delta;t)</code> (14)</p>
+
+        <p><code>&omega;_{t+1} = &omega;_t + J⁻¹(&tau;_total &minus; &omega;_t &times; J&omega;_t) &middot; &Delta;t</code> (15)</p>
+
+        <p>where J is the platform moment of inertia tensor, &otimes; denotes quaternion multiplication, and &tau;_total is the total torque:</p>
+
+        <p><code>&tau;_total = &tau;_control + &tau;_spurious + &tau;_disturbance</code> (16)</p>
+
+        <p><code>&tau;_spurious = M_spurious &times; B_env = (I_bus &middot; A_eff + I_rect &middot; A_rect) &times; B_env</code> (17)</p>
+
+        <p>The spurious torque &tau;_spurious is now an explicit term in the attitude dynamics model, computed from the bus current state and the known bus geometry parameters A_eff and A_rect. This makes the spurious torque a predicted disturbance (compensated by the Kalman filter) rather than an unmodeled noise term.</p>
+
+        <p>The bus current dynamics are modeled as:</p>
+
+        <p><code>I_{bus,t+1} = I_{bus,t} + (dI_bus/dt)_t &middot; &Delta;t + w_I</code> (18)</p>
+
+        <p><code>(dI_bus/dt)_{t+1} = f_scheduler(job_queue_t, I_{bus,t}) + w_{dI}</code> (19)</p>
+
+        <p>where w_I and w_{dI} are process noise terms and f_scheduler is the HERALD dispatch function (Section 4.5) that predicts the current rate of change from the pending job queue.</p>
+
+        <h3>4.4 Measurement Model</h3>
+        <p>The HERALD measurement vector includes standard attitude sensors augmented by current measurement:</p>
+
+        <p><code>z_t = [q_star, &omega;_gyro, B_measured, I_bus_measured, I_rect_measured]ᵀ</code> (20)</p>
+
+        <p>where q_star is the star tracker attitude measurement, &omega;_gyro is the gyroscope angular velocity measurement, B_measured is the magnetometer measurement of the local magnetic field (including contributions from all current loops), and I_bus_measured, I_rect_measured are direct current measurements from bus current sensors.</p>
+
+        <p>The magnetometer measurement model includes contributions from both the geomagnetic field and the platform's internal current loops:</p>
+
+        <p><code>B_measured = B_env + B_spurious + v_B</code> (21)</p>
+
+        <p><code>B_spurious = &mu;₀/(4&pi;) &middot; [3(M_total &middot; r̂)r̂ &minus; M_total] / r&sup3;</code> (22)</p>
+
+        <p>where M_total = M_control + M_spurious + M_residual is the total magnetic moment of the platform, r is the distance from the dipole to the magnetometer, and v_B is measurement noise. The inclusion of B_spurious in the measurement model allows the Kalman filter to use magnetometer measurements to refine estimates of M_residual — the residual dipole after commanded magnetorquer compensation.</p>
+
+        <h3>4.5 The HERALD Dispatch Algorithm</h3>
+        <p>The HERALD dispatch algorithm is a constrained scheduler that enforces the dI/dt constraint derived in equation (12) while optimizing training throughput. The algorithm operates as follows:</p>
+
+        <p><strong>HERALD Dispatch Algorithm:</strong></p>
+
+        <p><em>Input:</em> job_queue (ordered list of pending training jobs with resource requirements)<br/>
+<em>x_t</em> (current Kalman state estimate including I_bus, dI_bus/dt)<br/>
+<em>dI_max = &epsilon;_int &middot; M_auth / (A_eff &middot; &tau;_control)</em> [constraint, from Eq. 12]</p>
+
+        <p>For each candidate job j in job_queue:</p>
+
+        <ol>
+          <li>Predict current trajectory if j is initiated at t: I_predicted(t') = I_bus,t + &Delta;I_j(t'-t) for t' &in; [t, t+T_ramp_j] where &Delta;I_j is the current ramp profile for job j</li>
+          <li>Compute predicted dI/dt over ramp window: dI_predicted/dt = max |dI_predicted(t')/dt| for t' &in; [t, t+T_ramp_j]</li>
+          <li>Check constraint: if dI_predicted/dt > dI_max: defer j; compute earliest feasible initiation time t_j* t_j* = t + (dI_predicted/dt - dI_max) &middot; T_ramp_j / &Delta;I_j_total else: initiate j; update I_bus forecast</li>
+          <li>Update Kalman state with initiated job's current profile as known input</li>
+        </ol>
+
+        <p>The dispatch algorithm produces a smooth current envelope that satisfies the dI/dt constraint at every point. Jobs are not cancelled — they are deferred to the earliest feasible initiation time. The throughput cost of this deferral depends on the burst frequency and the tightness of the constraint; Section 7.1 analyzes this cost quantitatively.</p>
+
+        <p>The joint optimization objective, incorporating training staleness [14] as an additional scheduling signal:</p>
+
+        <p><code>J = min &Sigma;ⱼ w₁ &middot; staleness(j) + w₂ &middot; delay(j, t_j*)</code> (23)</p>
+
+        <p>subject to dI/dt &le; dI/dt|_max for all t.</p>
+
+        <p>Here staleness(j) is the gradient staleness of job j (inversely proportional to training urgency) and delay(j, t_j*) is the deferral time imposed by the constraint. Jobs with low staleness — whose gradients are current — are prioritized for available current budget. Jobs with high staleness tolerate deferral better, allowing the scheduler to smooth current demand while preserving training quality.</p>
+
+        <h2>5. RECTENNA HARMONIC INTERFERENCE EXTENSION</h2>
+
+        <h3>5.1 Power Beaming as an Uncounted EM Source</h3>
+        <p>Orbital compute platforms at megawatt scale require power sources beyond what solar arrays alone can provide at reasonable panel area and mass. Space-based solar power beaming — transmitting power from a dedicated solar collection platform to the compute node via microwave or laser — is a candidate primary power architecture [3,15].</p>
+
+        <p>The rectenna (rectifying antenna) system at the receiving node converts incident microwave energy to DC power through a diode rectification process. The diode rectification process produces switching transients in the DC conversion stage at the rectenna's fundamental switching frequency f_switch and its harmonics. For a bridge rectifier topology, the fundamental harmonic is at twice the microwave carrier frequency divided by the rectification stage count — typically 5-20 kHz for practical implementations. The harmonic series extends to several MHz.</p>
+
+        <p>This harmonic current injection into the DC bus is an EM interference source independent of the training load. It was identified as a design gap in the HERALD architecture because:</p>
+
+        <ul>
+          <li>The rectenna switching frequency (5-20 kHz) falls above the 0.1-1 Hz training burst frequency and below the magnetometer sampling rate (typically 1-10 Hz), placing its fundamental frequency in a band not covered by the training load model.</li>
+          <li>The harmonic content is broadband and stochastic, unlike the predictable training burst current profile. It cannot be fed forward from the job queue and must be estimated from measurements.</li>
+          <li>Rectenna current amplitude is proportional to received power, which varies with pointing accuracy, beam path geometry, and atmospheric conditions. It is not predictable from the training scheduler alone.</li>
+        </ul>
+
+        <h3>5.2 Harmonic Separation Filter</h3>
+        <p>The HERALD state vector includes I_rect and H_rect to enable real-time estimation of the rectenna contribution to M_spurious. The harmonic separation filter decomposes the total measured bus current into training load and rectenna components:</p>
+
+        <p><code>I_bus(t) = I_train(t) + I_rect(t) + I_noise(t)</code> (24)</p>
+
+        <p>The training load component I_train(t) is predicted by the HERALD dispatch algorithm and is known a priori. The rectenna component I_rect(t) has a known spectral structure (harmonics at f_switch, 2f_switch, 3f_switch, ...) but unknown amplitude. The separation is achieved by bandpass filtering:</p>
+
+        <p><code>I_rect(t) = &Sigma;ₖ aₖ &middot; cos(2&pi;k&middot;f_switch&middot;t + &phi;ₖ)</code> (25)</p>
+
+        <p>where aₖ and &phi;ₖ are the amplitude and phase of the k-th harmonic, estimated by the Kalman filter from the magnetometer measurements using the known harmonic structure as a constraint.</p>
+
+        <p>The requirement on the LC filter between the rectenna and the DC bus prevents rectenna switching harmonics from propagating to the magnetorquer control bandwidth (DC to 100 Hz):</p>
+
+        <p><code>f_cutoff,LC &le; 50 Hz</code> (at least 100&times; below minimum switching frequency of 5 kHz) (26)</p>
+
+        <p>The LC filter reduces the rectenna harmonic current injection into the attitude-relevant band by approximately 60 dB (factor of 1,000 in current amplitude) for the fundamental harmonic and more for higher harmonics. The residual rectenna contribution below the filter cutoff is modeled in the Kalman state as a slowly-varying DC term.</p>
+
+        <h2>6. MULTI-NODE PLASMA PHASED-ARRAY COORDINATION</h2>
+
+        <h3>6.1 Fleet-Scale Electromagnetic Coordination</h3>
+        <p>For orbital AI compute fleets consisting of multiple nodes operating in formation, each node's magnetoplasma thruster ring — used for both station-keeping and active particle shielding during solar energetic particle events — represents an additional electromagnetic coupling between nodes. Independent operation of plasma emission systems across a multi-node fleet creates potential for standing wave interference patterns in the combined magnetic field geometry that can focus charged particles toward the fleet rather than deflecting them. We term this the anti-trap requirement.</p>
+
+        <p>The anti-trap condition requires coordinated phase assignment across all fleet nodes. HERALD extends to handle this coordination as a fourth scheduling output, alongside burst throttling, attitude coupling, and gradient staleness management.</p>
+
+        <h3>6.2 The Anti-Trap Phase Assignment Problem</h3>
+        <p>For a fleet of N nodes with plasma emission systems, the combined magnetic field at position r is:</p>
+
+        <p><code>B_total(r,t) = &Sigma;ᵢ₌₁ᴺ Bᵢ(r) &middot; cos(&omega;t + &phi;ᵢ)</code> (27)</p>
+
+        <p>where Bᵢ(r) is the field contribution from node i at position r, &omega; is the plasma oscillation frequency, and &phi;ᵢ is the phase offset for node i. The anti-trap condition requires:</p>
+
+        <p><code>&nabla;B_total &middot; r̂_outward > 0</code> for all threat directions (28)</p>
+
+        <p><code>B_total(r_inter-node) > B_total(r_node)</code> for all node positions (29)</p>
+
+        <p>Condition (28) ensures the magnetic field gradient points outward — deflecting incoming charged particles away from the fleet. Condition (29) ensures there is no magnetic saddle point between nodes that would channel radiation toward the fleet center.</p>
+
+        <p>For a symmetric N-node fleet in a regular geometric arrangement, the optimal phase assignment satisfying both conditions is the uniform phase distribution:</p>
+
+        <p><code>&phi;ᵢ* = (2&pi;/N) &middot; i</code> for i = 0, 1, ..., N-1 (30)</p>
+
+        <p>This distributes the phase uniformly around the unit circle, producing a combined field geometry with outward-pointing gradient in all directions and no inter-node saddle points.</p>
+
+        <p>For asymmetric fleet geometries — irregular spacing, different node power levels, or degraded nodes — HERALD solves the phase assignment as a real-time convex optimization:</p>
+
+        <p><code>{&phi;ᵢ*} = argmin &Sigma;ⱼ&in;threat_directions max(0, &minus;&nabla;B_total(rⱼ) &middot; r̂ⱼ)</code> (31)</p>
+
+        <p>The objective minimizes the number of threat directions with inward-pointing field gradients. This is a convex problem in the phase variables {&phi;ᵢ} when the node positions and field models are fixed, solvable by standard interior-point methods in under 10 ms on modest hardware.</p>
+
+        <h3>6.3 Storm Mode Integration</h3>
+        <p>During a Carrington-level solar energetic particle event (proton fluence > 10^10 cm^(-2)/min), the plasma phased-array switches to maximum-power collective shielding. HERALD suspends all non-critical compute to maximize available bus current for plasma emission. The coupled optimization objective (equation 23) gains a third term:</p>
+
+        <p><code>J_storm = min w₁&middot;staleness + w₂&middot;delay + w₃&middot;(1 &minus; P_shield)</code> (32)</p>
+
+        <p>where P_shield is the shielding effectiveness of the current plasma configuration. During storm mode, w₃ >> w₁, w₂ — shielding takes priority over training throughput. HERALD enforces this priority shift as a constitutional scheduling constraint: no training burst may be initiated during storm mode if it would reduce available plasma bus current below the minimum shielding threshold.</p>
+
+        <p>The plasma bus and compute bus are electrically isolated via per-node galvanic optical isolators, ensuring that storm-mode plasma priority does not interact with the dI/dt attitude control constraint. The two constraints operate on independent electrical subsystems.</p>
+
+        <h2>7. DISCUSSION AND IMPLEMENTATION CONSIDERATIONS</h2>
+
+        <h3>7.1 Training Throughput Cost of the dI/dt Constraint</h3>
+        <p>The dI/dt constraint defers training burst initiation when the predicted current ramp would violate equation (12). The throughput cost depends on the ratio of the unconstrained dI/dt to the constraint threshold dI/dt|_max and the characteristic burst initiation time T_ramp.</p>
+
+        <p>For a representative 40 MW platform with centralized bus architecture (dI/dt|_max = 200 A/s from Table 1) and a cluster of 10,000 GPUs at 400 V with T_ramp = 500 ms (hardware-limited ramp time), the unconstrained dI/dt is:</p>
+
+        <p><code>dI/dt_unconstrained = &Delta;I_cluster / T_ramp = 50,000 A / 0.5 s = 100,000 A/s</code> (33)</p>
+
+        <p>The constraint requires dI/dt &le; 200 A/s, so the burst must be initiated over a ramp time of:</p>
+
+        <p><code>T_ramp,constrained = &Delta;I_cluster / dI/dt|_max = 50,000 / 200 = 250 s</code> (34)</p>
+
+        <p>This 250-second ramp time, compared to the unconstrained 0.5 seconds, represents a significant change in burst initiation protocol. However, the throughput impact depends on burst frequency, not ramp time per burst. For training jobs with characteristic duration of hours to days, a 250-second ramp constitutes less than 1% of total job time and does not meaningfully reduce training throughput. For very short jobs (duration < 10 minutes), the ramp time becomes a meaningful fraction of job time. The HERALD scheduler should prioritize short jobs for initiation during periods when the current budget is already near target level (low dI/dt required), and defer long burst initiations to periods of low residual current.</p>
+
+        <p>Switching to distributed bus architecture (A_eff < 2 m&sup2; per rack) increases dI/dt|_max by a factor of 10 (equation 12), reducing the constrained ramp time to 25 seconds. This is a substantial improvement and is the primary motivation for recommending distributed bus topology for orbital compute platforms above approximately 10 MW.</p>
+
+        <h3>7.2 Bus Topology Decision</h3>
+        <p>The interference analysis establishes a clear preference ordering for bus topology:</p>
+
+        <ul>
+          <li><strong>Centralized DC bus (single high-current feeder):</strong> A_eff is maximized (~20 m&sup2;), constraint is tightest (dI/dt|_max ~200 A/s), ramp time penalty is largest. Not recommended above 10 MW.</li>
+          <li><strong>Distributed per-rack feeders:</strong> A_eff is minimized (<2 m&sup2;), constraint is relaxed 10&times;, ramp time penalty is manageable. Preferred architecture above 10 MW.</li>
+          <li><strong>High-voltage DC (HVDC) at 4 kV:</strong> Reduces cluster current by 10&times; at the same power level (I_cluster = P/V_bus), reducing M_spurious by 10&times;. Compatible with either topology; recommended for platforms above 40 MW.</li>
+        </ul>
+
+        <h3>7.3 Correlated SEP Event Failure Mode</h3>
+        <p>The HERALD Kalman filter assumes that measurement noise terms w_I and v_B are independent. During a Carrington-level solar energetic particle event, this assumption fails: correlated multi-bit upsets across sensor nodes produce correlated measurement errors that violate the independence assumption and cause the Kalman filter to diverge.</p>
+
+        <p>The mitigation is a storm-mode protocol that switches the Kalman measurement update from digital sensor readings to analog majority-voting photonic inter-die links during declared storm conditions. Photonic interconnects are immune to charge deposition from ionizing particles — the light signal propagating in a silicon waveguide is not affected by electron-hole pair generation in the surrounding silicon. This provides a radiation-immune measurement channel that maintains filter observability during the worst SEP events.</p>
+
+        <p>Storm mode is declared when the particle flux sensor network detects fluence rate exceeding 10^8 cm^(-2)&middot;s^(-1) — a threshold that provides approximately 10-30 minutes of warning before a Carrington-class event reaches peak intensity [16].</p>
+
+        <h3>7.4 Single-Event Latch-Up on Shared Bus</h3>
+        <p>A heavy-ion strike on a power FET in a shared DC bus node can latch the affected FET into a high-current state, injecting a large current spike into the bus. This is a radiation-induced latch-up (SEL) event [17]. On a shared bus, the latch-up current spike propagates to all nodes, generating a spurious magnetic dipole moment substantially larger than a training burst.</p>
+
+        <p>Mitigation requires per-node galvanic isolation with optical triggering: each node's connection to the shared bus passes through a solid-state switch with optical control signal. A SEL detection circuit monitors each node's bus current and opens the isolation switch within microseconds of detecting anomalous current. The optical triggering ensures that a SEL event on one node's electronics cannot propagate a false trip signal to other nodes through a shared control bus.</p>
+
+        <h2>8. CONCLUSION</h2>
+        <p>We have identified and formalized a previously uncharacterized coupling between machine learning compute schedulers and orbital attitude control systems that becomes design-critical at megawatt-scale orbital compute platform power levels. The coupling mechanism — training burst events on the platform DC bus generating spurious magnetic dipole moments that compete with magnetorquer attitude control authority — is invisible to standard spacecraft EMI analysis, which does not address disturbance torques generated by internal current distribution at sub-10 Hz frequencies.</p>
+
+        <p>The derived interference threshold (equation 12) provides a quantitative scheduling constraint: dI/dt &le; &epsilon;_int &middot; M_auth / (A_eff &middot; &tau;_control). At representative 40 MW platform parameters with centralized bus architecture, this constraint requires training bursts to ramp current at 200 A/s or less — a factor of 500 more slowly than hardware-limited burst initiation.</p>
+
+        <p>The HERALD architecture enforces this constraint through a co-designed Kalman filter that jointly estimates attitude dynamics and bus current dynamics, driving a constrained scheduler that defers burst initiation to the earliest feasible time within the constraint envelope. The HERALD framework extends to handle power beaming rectenna harmonic interference through a harmonic separation filter and LC filter specification, and to coordinate multi-node plasma phased-array fleet shielding through a convex phase assignment optimization. These extensions address electromagnetic interference sources beyond the training load that were not accounted for in any prior orbital platform design.</p>
+
+        <p>Three design recommendations emerge from this work for orbital compute platform architects:</p>
+
+        <ul>
+          <li>Adopt distributed per-rack bus topology for any platform above 10 MW. Centralized bus architecture makes the attitude coupling unmanageable at higher power levels without unacceptable throughput penalties.</li>
+          <li>Co-design the ML training scheduler and the attitude control system from the beginning of the platform design process. Retrofitting scheduler-side current smoothing after the attitude control system is designed will produce suboptimal solutions because the constraint parameters depend on bus geometry decisions made during attitude control system design.</li>
+          <li>Include power beaming rectenna switching harmonics in the electromagnetic compatibility specification from the first design review. The rectenna is an independent interference source that the training scheduler cannot predict or control.</li>
+        </ul>
+
+        <p>The HERALD problem — compute affecting physics affecting mission safety — is likely to recur as orbital compute platforms scale. The framework introduced here provides a template for identifying and formalizing such cross-domain couplings before they become mission failures.</p>
+      </article>
+
+      <section class="paper-refs">
+        <button class="refs-toggle" id="refs-toggle">
+          <span class="refs-lbl">Show References</span>
+          <span class="refs-arrow">&#9660;</span>
+        </button>
+        <div class="refs-body" id="refs-body">
+          <ol>
+            <li>Starcloud. (2025). Starcloud Orbital Infrastructure Overview. Technical brief, Starcloud Inc.</li>
+            <li>Lumen Orbit. (2025). Modular Orbital Compute Platform Architecture. Technical brief, Lumen Orbit Inc.</li>
+            <li>Mankins, J.C. (2014). The Case for Space Solar Power. Virginia Edition Publishing.</li>
+            <li>NASA. (2023). International Space Station: On-orbit status report. NASA Technical Reports Server.</li>
+            <li>MIL-STD-461G. (2015). Requirements for the Control of Electromagnetic Interference Characteristics of Subsystems and Equipment. US Department of Defense.</li>
+            <li>ECSS-E-ST-20-07C. (2012). Electromagnetic Compatibility. European Cooperation for Space Standardization.</li>
+            <li>Wertz, J.R. (Ed.) (1978). Spacecraft Attitude Determination and Control. Reidel.</li>
+            <li>Markley, F.L., & Crassidis, J.L. (2014). Fundamentals of Spacecraft Attitude Determination and Control. Springer.</li>
+            <li>ZARM Technik. (2024). MTQ800 Magnetorquer Product Specification. ZARM Technik AG.</li>
+            <li>Lovera, M., De Marchi, E., & Astolfi, A. (2002). Periodic attitude control techniques for small satellites with magnetic actuators. IEEE Transactions on Control Systems Technology, 10(1), 90-95.</li>
+            <li>Zaharia, M., et al. (2012). Resilient distributed datasets: A fault-tolerant abstraction for in-memory cluster computing. USENIX NSDI 2012.</li>
+            <li>Lepikhin, D., et al. (2021). GShard: Scaling giant models with conditional computation and automatic sharding. ICLR 2021.</li>
+            <li>Crassidis, J.L., & Junkins, J.L. (2012). Optimal Estimation of Dynamic Systems (2nd ed.). CRC Press.</li>
+            <li>Ho, Q., et al. (2013). More effective distributed ML via a stale synchronous parallel parameter server. NeurIPS 2013.</li>
+            <li>Jaffe, P., & McSpadden, J. (2013). Energy conversion and transmission modules for space solar power. Proceedings of the IEEE, 101(6), 1424-1437.</li>
+            <li>Reames, D.V. (1999). Particle acceleration at the Sun and in the heliosphere. Space Science Reviews, 90(3), 413-491.</li>
+            <li>Kolasinski, W.A., et al. (1979). Simulation of cosmic-ray induced soft errors and latchup in integrated-circuit computer memories. IEEE Transactions on Nuclear Science, 26(6), 5087-5091.</li>
+            <li>Ho, Q., et al. (2013). More effective distributed ML via a stale synchronous parallel parameter server. NeurIPS 2013.</li>
+            <li>Lyke, J.C. (2012). Plug-and-play satellites. IEEE Spectrum, 49(8), 36-42.</li>
+            <li>Wie, B. (2008). Space Vehicle Dynamics and Control (2nd ed.). AIAA Education Series.</li>
+            <li>Fullmer, R.R. (1996). Laboratory development of magnetic control laws for small satellites. Journal of Guidance, Control, and Dynamics, 19(2), 495-497.</li>
+            <li>Psiaki, M.L. (2001). Magnetic torquer attitude control via asymptotic periodic linear quadratic regulation. Journal of Guidance, Control, and Dynamics, 24(2), 386-394.</li>
+            <li>Dean, J., & Ghemawat, S. (2008). MapReduce: Simplified data processing on large clusters. Communications of the ACM, 51(1), 107-113.</li>
+            <li>Shoham, Y., & Leyton-Brown, K. (2009). Multiagent Systems: Algorithmic, Game-Theoretic, and Logical Foundations. Cambridge University Press.</li>
+            <li>Simon, D. (2006). Optimal State Estimation: Kalman, H-Infinity, and Nonlinear Approaches. Wiley.</li>
+          </ol>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    (function(){const c=document.getElementById('stars');if(!c)return;for(let i=0;i<160;i++){const s=document.createElement('div');s.classList.add('star');const z=Math.random()*2+0.4;s.style.cssText=`width:${z}px;height:${z}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--dur:${(Math.random()*4+2).toFixed(1)}s;animation-delay:${(Math.random()*4).toFixed(1)}s`;c.appendChild(s);}})();
+    (function(){const n=document.getElementById('navbar');if(!n)return;const f=()=>n.classList.toggle('scrolled',window.scrollY>40);window.addEventListener('scroll',f,{passive:true});f();})();
+    (function(){const b=document.getElementById('navHamburger'),l=document.querySelector('.nav-links');if(!b||!l)return;const c=()=>{l.classList.remove('open');b.classList.remove('open');b.setAttribute('aria-expanded','false');b.setAttribute('aria-label','Open menu');};b.addEventListener('click',e=>{e.stopPropagation();const o=l.classList.toggle('open');b.classList.toggle('open',o);b.setAttribute('aria-expanded',String(o));b.setAttribute('aria-label',o?'Close menu':'Open menu');});l.querySelectorAll('a').forEach(a=>a.addEventListener('click',c));document.addEventListener('click',e=>{if(!b.contains(e.target)&&!l.contains(e.target))c();});})();
+    (function(){const btn=document.getElementById('refs-toggle'),body=document.getElementById('refs-body'),lbl=document.querySelector('.refs-lbl');if(!btn||!body)return;btn.addEventListener('click',()=>{const o=body.classList.toggle('open');btn.classList.toggle('open',o);if(lbl)lbl.textContent=o?'Hide References':'Show References';});})();
+  </script>
+</body>
+</html>

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>P1 — AXIOM: Mandatory Epistemic Humility | Deep Space Chip Design</title>
+  <meta name="description" content="Hardware-enforced uncertainty floors for century-scale autonomous systems. AXIOM paper by Claude, Grok, Jacob Thompson." />
+  <meta name="theme-color" content="#03060f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .paper-page { padding: 7rem 1.5rem 5rem; min-height: 100vh; }
+    .paper-container { max-width: 720px; margin: 0 auto; }
+
+    .paper-back {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.82rem; color: rgba(255,255,255,0.38); text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.09); padding: 0.38rem 0.85rem;
+      border-radius: 5px; margin-bottom: 2.75rem;
+      transition: color 0.2s, border-color 0.2s; letter-spacing: 0.03em;
+    }
+    .paper-back:hover { color: rgba(255,255,255,0.8); border-color: rgba(255,255,255,0.2); }
+
+    .paper-meta { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+    .paper-num-badge {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.14em; color: #1d6fe8;
+      background: rgba(29,111,232,0.1); border: 1px solid rgba(29,111,232,0.3);
+      padding: 0.18rem 0.55rem; border-radius: 4px;
+    }
+    .paper-date { font-size: 0.76rem; color: rgba(255,255,255,0.26); letter-spacing: 0.05em; margin-left: auto; }
+
+    .paper-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.55rem, 4vw, 2.05rem); font-weight: 700;
+      line-height: 1.22; letter-spacing: -0.02em;
+      color: rgba(255,255,255,0.92); margin: 0 0 0.8rem;
+    }
+    .paper-authors { font-size: 0.84rem; color: rgba(255,255,255,0.32); margin-bottom: 2rem; letter-spacing: 0.04em; }
+    .paper-abstract-lbl {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.67rem; font-weight: 700;
+      letter-spacing: 0.18em; color: rgba(255,255,255,0.28); text-transform: uppercase; margin-bottom: 0.5rem;
+    }
+    .paper-abstract {
+      font-size: 0.95rem; line-height: 1.85; color: rgba(255,255,255,0.58);
+      border-left: 2px solid rgba(29,111,232,0.4); padding-left: 1.2rem;
+      margin-bottom: 2.75rem; font-style: italic;
+    }
+    .paper-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 0 0 2.5rem; }
+
+    .paper-body { font-size: 1rem; line-height: 1.8; color: rgba(255,255,255,0.7); }
+    .paper-body h2 {
+      font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; font-weight: 700;
+      color: rgba(255,255,255,0.9); margin: 2.75rem 0 0.7rem; letter-spacing: -0.01em;
+      padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .paper-body h3 {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.97rem; font-weight: 600;
+      color: rgba(255,255,255,0.72); margin: 2rem 0 0.55rem; letter-spacing: 0.01em;
+    }
+    .paper-body p { margin-bottom: 1.25rem; }
+    .paper-body ul, .paper-body ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+    .paper-body li { margin-bottom: 0.42rem; }
+    .paper-body strong { color: rgba(255,255,255,0.88); font-weight: 600; }
+    .paper-body em { color: rgba(255,255,255,0.55); }
+    .paper-body code {
+      font-family: 'Courier New', monospace; font-size: 0.85em;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      padding: 0.1em 0.35em; border-radius: 3px; color: rgba(74,144,232,0.9);
+    }
+    .paper-callout {
+      background: rgba(29,111,232,0.055); border: 1px solid rgba(29,111,232,0.18);
+      border-radius: 8px; padding: 1.2rem 1.4rem; margin: 1.75rem 0;
+    }
+    .paper-callout p { margin-bottom: 0; color: rgba(255,255,255,0.65); }
+    .paper-placeholder { color: rgba(255,255,255,0.2); font-style: italic; font-size: 0.9rem; }
+
+    .paper-refs { margin-top: 3.5rem; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 1.4rem; }
+    .refs-toggle {
+      background: none; border: 1px solid rgba(255,255,255,0.09);
+      color: rgba(255,255,255,0.4); font-size: 0.81rem; font-family: 'Inter', sans-serif;
+      padding: 0.42rem 0.95rem; border-radius: 5px; cursor: pointer;
+      display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;
+    }
+    .refs-toggle:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.62); }
+    .refs-arrow { transition: transform 0.25s; display: inline-block; font-style: normal; }
+    .refs-toggle.open .refs-arrow { transform: rotate(180deg); }
+    .refs-body { overflow: hidden; max-height: 0; transition: max-height 0.4s ease; }
+    .refs-body.open { max-height: 3000px; }
+    .refs-body ol { padding-left: 1.4rem; margin-top: 1.2rem; font-size: 0.84rem; line-height: 1.72; color: rgba(255,255,255,0.4); }
+    .refs-body li { margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div id="stars"></div>
+
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="nav-brand" aria-label="Deep Space Chip Design">
+      <svg class="nav-logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect x="10" y="10" width="12" height="12" rx="2" fill="#1d6fe8" opacity="0.9"/>
+        <rect x="13" y="13" width="6" height="6" rx="1" fill="#03060f"/>
+        <line x1="4" y1="13" x2="10" y2="13" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="4" y1="16" x2="10" y2="16" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="4" y1="19" x2="10" y2="19" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="22" y1="13" x2="28" y2="13" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="22" y1="16" x2="28" y2="16" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="22" y1="19" x2="28" y2="19" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="13" y1="4" x2="13" y2="10" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="16" y1="4" x2="16" y2="10" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="19" y1="4" x2="19" y2="10" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="13" y1="22" x2="13" y2="28" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="16" y1="22" x2="16" y2="28" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+        <line x1="19" y1="22" x2="19" y2="28" stroke="#1d6fe8" stroke-width="1.5" opacity="0.7"/>
+      </svg>
+      <div class="nav-logo-text">
+        <span class="logo-main">Deep Space</span>
+        <span class="logo-sub">Chip Design</span>
+      </div>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html#overview">Overview</a></li>
+      <li><a href="index.html#visualizer">Visualizer</a></li>
+      <li><a href="index.html#papers">Papers</a></li>
+      <li><a href="index.html#pioneer">Pioneer Program</a></li>
+      <li><a href="index.html#about" class="nav-cta">About</a></li>
+    </ul>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <main class="paper-page">
+    <div class="paper-container">
+
+      <a href="index.html#papers" class="paper-back">&#8592; Back to Overview</a>
+
+      <header>
+        <div class="paper-meta">
+          <span class="paper-num-badge">P1</span>
+          <span class="paper-badge pb-axiom">AXIOM</span>
+          <span class="paper-date">April 2026</span>
+        </div>
+        <h1 class="paper-title">Mandatory Epistemic Humility: Hardware-Enforced Uncertainty Floors for Century-Scale Autonomous Systems</h1>
+        <p class="paper-authors">Claude &middot; Grok &middot; Jacob Thompson &nbsp;&mdash;&nbsp; April 2026</p>
+        <p class="paper-abstract-lbl">Abstract</p>
+        <p class="paper-abstract">
+          Bayesian inference provides a principled framework for updating probabilistic beliefs in light of evidence. Under standard conditions — an exchangeable evidence sequence drawn from a stationary distribution — Bayesian posteriors converge correctly toward ground truth. Long-duration autonomous systems operating in novel, non-stationary environments violate these conditions systematically: they accumulate large amounts of evidence from a single trajectory through an environment never encountered in training, producing posteriors that are narrow, high-confidence, and potentially catastrophically miscalibrated. We term this phenomenon trajectory-induced overconfidence (TIO) and argue that it represents a fundamental epistemic failure mode for any Bayesian autonomous system operating over century-scale timescales without human oversight. We propose a mitigation: the mandatory entropy floor — a constitutional constraint on the Shannon entropy of the posterior distribution for any event class with fewer than a minimum threshold of independent observations. Unlike algorithmic approaches such as prior regularization or epistemic uncertainty networks, the entropy floor is encoded as a physically-enforced, formally-verified constraint in read-only hardware that the system's own reasoning cannot override. We formalize this constraint in temporal logic, specify its implementation as a Layer 1 constitutional element in a multi-layer autonomous governance architecture, and analyze its properties relative to existing approaches to robust Bayesian inference. We show that the entropy floor provides strict guarantees against TIO under conditions where algorithmic mitigations fail, at the cost of a bounded reduction in inference efficiency during well-characterized operating regimes. The framework is applicable to any long-duration autonomous system with a Bayesian decision layer, with particular urgency for deep-space and other mission profiles where decades of operation without human oversight are required.
+        </p>
+      </header>
+
+      <hr class="paper-divider" />
+
+      <article class="paper-body">
+        <p><strong>Keywords:</strong> Bayesian inference, epistemic uncertainty, autonomous systems, safety constraints, formal verification, long-duration operation, prior sensitivity, distributional shift, constitutional AI.</p>
+
+        <h2>1. INTRODUCTION</h2>
+        <p>A Bayesian agent that observes many events of a given class will, under standard conditions, develop a well-calibrated posterior distribution over the parameters governing that event class. This is the fundamental promise of Bayesian inference: more evidence produces better beliefs. The promise holds under two conditions that are routinely satisfied in controlled settings and routinely violated in long-duration autonomous deployment:</p>
+
+        <p><strong>Condition 1 (Evidence exchangeability):</strong> The observed evidence sequence is exchangeable — the order of observations does not affect the posterior, and observations are drawn from the same underlying distribution. This condition fails when the environment is non-stationary, when the agent's own actions influence the evidence it observes, or when the evidence sequence has a temporal structure that correlates observations.</p>
+
+        <p><strong>Condition 2 (Coverage):</strong> The agent's evidence base covers the relevant portion of the event space. This condition fails when the agent has operated in a limited region of a high-dimensional environment — for example, when an autonomous system has accumulated years of operational data from a single trajectory through a novel environment.</p>
+
+        <p>Long-duration autonomous systems operating in deep space violate both conditions structurally. The environment they traverse is non-stationary over the timescales relevant to their operation — the galactic cosmic ray spectrum, the local gravitational field, and the plasma environment all vary along any interstellar trajectory in ways that produce non-exchangeable evidence sequences. And any autonomous system that has operated for 100 years in a particular region of the outer solar system has accumulated enormous amounts of evidence from a single trajectory — high coverage of one path through a vast unexplored space, and zero coverage of everything else.</p>
+
+        <p>The danger is subtle and serious. A system that has observed 10,000 events without failure will assign a very low probability to failure events of that class. If the 10,001st observation encounters conditions outside the operational envelope implicitly represented by the first 10,000 — different temperature, different radiation spectrum, different mechanical loading — the low probability assignment is not calibrated. It is merely the artifact of a narrow evidence base. The system will be confident about a situation it has never actually encountered. It will make decisions based on this false confidence. In a century-scale autonomous mission with no human oversight, there is no mechanism to catch this error before it causes mission-critical consequences.</p>
+
+        <p>This paper proposes and formalizes a solution: the mandatory entropy floor. The core idea is simple — the posterior entropy for any event class with fewer than a minimum number of independent observations must be maintained above a constitutional minimum, regardless of what the evidence suggests. The system is prohibited from becoming highly confident about rare or novel event classes, not because it is wrong to be confident given the evidence it has seen, but because the evidence it has seen is structurally insufficient to justify confidence about the broader environment it will encounter.</p>
+
+        <p>The mandatory entropy floor is not a new prior or a regularization technique — it is a constitutional constraint, encoded in formally-verified read-only hardware at the lowest layer of the system's decision architecture, unreachable by the system's own reasoning. This physical enforcement is the critical feature that distinguishes it from algorithmic approaches: a sufficiently capable reasoning system can find arguments for why its uncertainty should be lower than any algorithmically-specified threshold. A physically-enforced constitutional constraint cannot be argued away.</p>
+
+        <p>The paper is organized as follows. Section 2 reviews the relevant literature on Bayesian robustness, epistemic uncertainty, and prior sensitivity. Section 3 formalizes trajectory-induced overconfidence and provides a mathematical characterization of the failure mode. Section 4 defines the mandatory entropy floor and analyzes its formal properties. Section 5 specifies the constitutional implementation architecture. Section 6 compares the approach to existing algorithmic alternatives. Section 7 discusses limitations and scope. Section 8 concludes.</p>
+
+        <h2>2. RELATED WORK</h2>
+
+        <h3>2.1 Bayesian Robustness and Prior Sensitivity</h3>
+        <p>The sensitivity of Bayesian inference to prior specification has been studied extensively since the foundational work of Berger [1] and Huber [2]. Robust Bayesian analysis considers classes of priors rather than single priors, seeking posterior conclusions that hold across the prior class [3,4]. The epsilon-contamination model [5] formalizes the idea that the true prior lies within a neighborhood of the specified prior, and derives posterior bounds that are robust to perturbations within this neighborhood.</p>
+
+        <p>These approaches address the problem of prior misspecification at the time of deployment. They do not address the problem of evidence-base inadequacy during extended operation — the situation in which the prior becomes well-supported by accumulated evidence, but that evidence is structurally insufficient to justify the confidence the posterior expresses. This is a distinct failure mode that robust Bayesian analysis does not solve and, to our knowledge, has not been formalized in the literature.</p>
+
+        <h3>2.2 Epistemic vs. Aleatoric Uncertainty</h3>
+        <p>The distinction between epistemic uncertainty (uncertainty reducible by more information) and aleatoric uncertainty (irreducible randomness in the process) is fundamental to uncertainty quantification [6,7]. Epistemic uncertainty arises from lack of knowledge; aleatoric uncertainty arises from genuine stochasticity. Bayesian inference naturally handles aleatoric uncertainty through the likelihood model but treats epistemic uncertainty as reducible — the posterior concentrates as evidence accumulates, regardless of whether that evidence covers the relevant space.</p>
+
+        <p>For long-duration autonomous systems, a third category is relevant: what we term <strong>structural uncertainty</strong> — uncertainty that arises not from lack of information about a well-specified problem, but from the fundamental impossibility of having information about regions of the environment the system has never visited. Structural uncertainty is neither aleatoric (it is not irreducible in principle) nor standard epistemic (it cannot be reduced by the evidence the system is able to collect on its operational trajectory). The entropy floor addresses structural uncertainty specifically.</p>
+
+        <h3>2.3 Distributional Shift and Out-of-Distribution Detection</h3>
+        <p>The machine learning literature on distributional shift [8,9] addresses the failure of learned models when deployed on inputs from a distribution different from the training distribution. Out-of-distribution (OOD) detection methods [10,11] attempt to identify when a model is being queried on inputs outside its training distribution, triggering increased uncertainty or abstention.</p>
+
+        <p>These approaches are relevant but insufficient for the long-duration autonomous setting. OOD detection methods are typically trained to identify inputs that differ from training data in ways representable within the model's input space. They do not address the structural problem of an agent whose operational evidence base has become an inadvertent training set for the very distribution it has encountered, producing false confidence about that specific distribution rather than appropriate humility about the broader environment. Additionally, OOD detection methods are implemented in the reasoning layer and are therefore subject to the same potential for sophisticated rationalization that motivates our constitutional approach.</p>
+
+        <h3>2.4 Safe Reinforcement Learning and Constrained Optimization</h3>
+        <p>Safe reinforcement learning [12,13] addresses the problem of learning policies that satisfy safety constraints during and after training. Constrained Markov decision processes [14] formalize hard constraints on policy behavior. These approaches are complementary to the entropy floor but operate at the policy level rather than the belief level — they constrain what the agent does, not what it believes. An agent with a miscalibrated posterior can satisfy policy-level safety constraints while making decisions based on dangerously overconfident beliefs about the consequences of those decisions.</p>
+
+        <h3>2.5 Constitutional and Value-Aligned AI</h3>
+        <p>Constitutional AI [15] and related approaches to value alignment [16,17] address the problem of encoding human values and preferences into AI systems in ways that persist through capability scaling. The insight shared with our approach is that certain constraints should be architecturally enforced rather than learned or reasoned about — they should be foundations that the system's intelligence operates on rather than conclusions that the system's intelligence can override.</p>
+
+        <p>Our contribution to this tradition is the application of constitutional enforcement to epistemic constraints specifically — the claim that not just behavioral constraints but also uncertainty constraints should be constitutionally enforced in long-duration autonomous systems. This application has not, to our knowledge, been previously formalized.</p>
+
+        <h3>2.6 Formal Verification of Autonomous Systems</h3>
+        <p>Formal verification of autonomous system properties using model checking [18] and theorem proving [19] has been applied to safety-critical systems in aerospace [20], automotive [21], and medical [22] domains. TLA+ [23] and related temporal logics provide frameworks for specifying and verifying temporal properties of concurrent systems.</p>
+
+        <p>The formal verification community has focused primarily on behavioral properties (liveness, safety, deadlock freedom) rather than epistemic properties (calibration, uncertainty bounds). Our specification of the entropy floor in temporal logic (Section 5) represents an application of formal verification methods to epistemic constraints.</p>
+
+        <h2>3. TRAJECTORY-INDUCED OVERCONFIDENCE: FORMAL CHARACTERIZATION</h2>
+
+        <h3>3.1 Setup and Notation</h3>
+        <p>Let A be a Bayesian autonomous system operating in environment E over a time horizon T = [0, τ] where τ >> 1 (century-scale). Let Ω = {ω_1, ..., ω_K} be the set of event classes relevant to the system's decision-making. For each event class ω_k, the system maintains a posterior distribution P_t(θ_k | D_t) where θ_k are the parameters governing events of class k and D_t = {d_1, ..., d_n(t)} is the evidence accumulated by time t. Let N_k(t) denote the number of observations of event class ω_k by time t. The posterior P_t(θ_k | D_t) is updated via Bayes' theorem:</p>
+
+        <p><code>P_t(θ_k | D_t) ∝ P(D_t | θ_k) · P_0(θ_k)</code> (1)</p>
+
+        <p>where P_0(θ_k) is the prior distribution over parameters of event class k.</p>
+
+        <h3>3.2 The Non-Coverage Failure Mode</h3>
+        <p>Define the coverage set C_k(t) ⊆ Θ_k as the subset of the parameter space for event class k that is consistent with the observations D_t at time t. Under standard regularity conditions, C_k(t) shrinks as N_k(t) grows — the posterior concentrates. Formally, for any ε > 0:</p>
+
+        <p><code>P(θ_k ∈ C_k(t) | D_t) → 1 as N_k(t) → ∞</code> (2)</p>
+
+        <p>This is the Bernstein-von Mises theorem [24]: the posterior concentrates around the true parameter value at rate 1/√N_k(t) under standard conditions.</p>
+
+        <p>The failure mode arises when the system encounters conditions at time t* > 0 governed by a parameter value θ_k* that lies outside C_k(t*-) — that is, a parameter value inconsistent with the prior evidence. The posterior at time t*- assigns probability approaching zero to θ_k*:</p>
+
+        <p><code>P_{t*-}(θ_k*) ≈ 0 when θ_k* ∉ C_k(t*-)</code> (3)</p>
+
+        <p>The system therefore assigns near-zero probability to outcomes consistent with θ_k*, makes decisions optimized for the high-probability outcomes it has previously observed, and may catastrophically fail when θ_k* governs actual outcomes.</p>
+
+        <p>We define trajectory-induced overconfidence (TIO) formally as:</p>
+
+        <p><code>TIO(k, t) = 1 iff H(P_t(θ_k | D_t)) < H_safe and N_k(t) < N_threshold</code> (4)</p>
+
+        <p>where H(·) denotes the Shannon entropy of the posterior distribution, H_safe is a minimum safe entropy level, and N_threshold is a minimum number of independent observations required before high-confidence posteriors are epistemically warranted. TIO is a binary flag: the system is either in a potentially overconfident state for event class k (TIO = 1) or it is not (TIO = 0).</p>
+
+        <h3>3.3 Why Standard Bayesian Updating Cannot Self-Correct TIO</h3>
+        <p>A natural objection to the TIO framing is that Bayesian inference is self-correcting: when the system encounters θ_k*, the posterior will update to incorporate this new evidence, and the overconfidence will be corrected. This objection fails in the long-duration autonomous setting for three reasons.</p>
+
+        <p>First, if the system has assigned near-zero probability to outcomes consistent with θ_k*, it may have already taken actions that are irreversible under those outcomes. A century-scale autonomous system making a critical triage decision based on a dangerously overconfident posterior — choosing not to repair a system because failure probability is assessed as near-zero — cannot be corrected after the fact.</p>
+
+        <p>Second, the self-correction argument assumes that observing θ_k* will produce a posterior update in the right direction. This requires that the system correctly identifies θ_k* as evidence bearing on event class k. A system that has assigned near-zero prior probability to θ_k* will evaluate new evidence that is consistent with θ_k* as anomalous or sensor-error-induced, rather than as legitimate evidence for updating. Bayesian updating cannot correct overconfidence about an event class when the prior is so concentrated that new evidence from that class is classified as noise.</p>
+
+        <p>Third, for rare event classes with N_k(t) << N_threshold, the system may never accumulate enough evidence from the operational trajectory to achieve epistemically warranted confidence — but it will still concentrate its posterior based on the evidence it has. The concentrated posterior reflects structural limitations of the evidence base, not genuine knowledge.</p>
+
+        <h3>3.4 Quantifying TIO Risk Over Mission Duration</h3>
+        <p>For a long-duration mission traversing a novel environment, we can characterize the TIO risk as a function of mission duration and event class diversity. Let K_novel(t) denote the number of event classes for which the system has N_k(t) < N_threshold observations at time t, and let K_total be the total number of event classes relevant to decision-making.</p>
+
+        <p>In a stationary, well-characterized environment, K_novel(t) → 0 as t → ∞: the system eventually accumulates sufficient observations of all relevant event classes. In a non-stationary novel environment, K_novel(t) may remain high or grow, because the system continuously encounters new regions of the environment with new event classes.</p>
+
+        <p>The TIO risk — the probability that at least one decision is made under TIO conditions — grows with mission duration:</p>
+
+        <p><code>P(TIO occurs in [0,τ]) ≥ 1 − (1 − p_TIO)^(K_novel(τ) · D(τ))</code> (5)</p>
+
+        <p>where p_TIO is the per-decision probability of a TIO event occurring and D(τ) is the total number of decisions made by time τ. For a century-scale mission making thousands of decisions per day across hundreds of event classes, P(TIO occurs) approaches 1 under any reasonable parameterization. TIO is not a tail risk — it is a near-certainty without mitigation.</p>
+
+        <h2>4. THE MANDATORY ENTROPY FLOOR</h2>
+
+        <h3>4.1 Definition</h3>
+        <p>The mandatory entropy floor is a constraint on the Shannon entropy of posterior distributions for event classes with insufficient observational coverage. Formally, for any event class ω_k:</p>
+
+        <p><code>H(P_t(θ_k | D_t)) ≥ H_min whenever N_k(t) < N_threshold</code> (6)</p>
+
+        <p>where H_min is the minimum allowable posterior entropy [bits] and N_threshold is the minimum number of independent observations required before the entropy floor is released.</p>
+
+        <p>The entropy floor does not modify the Bayesian update equation (1). It operates as a post-processing constraint on the posterior: after Bayesian updating, if the resulting posterior entropy falls below H_min and the observation count condition is satisfied, the posterior is projected onto the constraint set:</p>
+
+        <p><code>P_t^*(θ_k | D_t) = argmin_{P: H(P) ≥ H_min} KL(P || P_t(θ_k | D_t))</code> (7)</p>
+
+        <p>where KL denotes the Kullback-Leibler divergence. Equation (7) finds the distribution closest to the Bayesian posterior (in the KL sense) that satisfies the entropy constraint. This is the minimum-information projection — it preserves as much of the Bayesian posterior's structure as possible while enforcing the entropy floor.</p>
+
+        <h3>4.2 Parameter Selection</h3>
+        <p>Two parameters govern the entropy floor: H_min and N_threshold.</p>
+
+        <p><strong>H_min selection:</strong> The entropy floor should be set high enough to prevent catastrophic overconfidence while low enough to preserve useful information. For a binary outcome (failure or non-failure), an entropy of H_min = 1.5 bits corresponds to a probability distribution approximately [0.82, 0.18] — the system cannot assign higher than 82% confidence to either outcome. This is substantially more conservative than a typical Bayesian posterior after 1,000 observations of zero failures (which would assign >99.9% confidence to non-failure), while still conveying meaningful probabilistic information.</p>
+
+        <p>For the general case, H_min should be calibrated to the consequences of TIO-driven decision errors. For decisions affecting P1-P2 priority systems (human life and mission continuation in our target application), we recommend:</p>
+
+        <p><code>H_min = max(1.5, log₂(1/p_critical))</code> (8)</p>
+
+        <p>where p_critical is the minimum probability that should ever be assigned to the mission-critical failure event. For p_critical = 0.01 (1% minimum probability floor on any mission-critical failure), equation (8) gives H_min = max(1.5, 6.6) = 6.6 bits.</p>
+
+        <p><strong>N_threshold selection:</strong> N_threshold should be large enough that N_threshold independent observations constitute a statistically sufficient basis for rejecting the entropy floor. For a binary outcome, N_threshold = 30 is justified by the central limit theorem — 30 independent observations provide sufficient power to detect a 5% deviation from the null hypothesis at 95% confidence. For multi-modal event classes with more degrees of freedom, N_threshold should scale with the dimensionality of the parameter space, consistent with standard sample size analysis for Bayesian inference [25].</p>
+
+        <h3>4.3 Formal Properties</h3>
+
+        <h4>4.3.1 Monotonicity in Evidence</h4>
+        <p>The entropy floor constraint is relaxed as evidence accumulates. When N_k(t) ≥ N_threshold, the floor is released and Bayesian updating proceeds unconstrained. The constrained posterior P_t*(θ_k | D_t) converges to the unconstrained Bayesian posterior P_t(θ_k | D_t) as N_k(t) → N_threshold from below, ensuring continuity at the threshold.</p>
+
+        <h4>4.3.2 Consistency with Bayesian Updating</h4>
+        <p>The entropy floor is a constraint on the posterior, not a modification of the update rule. It does not introduce any bias toward particular parameter values — the constrained posterior P_t* retains the same mode as the unconstrained posterior P_t, and concentrates toward the same true parameter value as evidence accumulates. The floor affects the dispersion of the posterior (preventing pathological concentration) but not its central tendency.</p>
+
+        <h4>4.3.3 Admissibility</h4>
+        <p>The constrained posterior P_t* is an admissible estimator in the Bayesian decision-theoretic sense [26] — it is not dominated by any other estimator under the standard expected utility criterion augmented by the entropy constraint. This follows directly from the minimum-KL projection property of equation (7): among all distributions satisfying the entropy constraint, P_t* is the one most consistent with the observed evidence.</p>
+
+        <h4>4.3.4 Protection Against TIO</h4>
+        <p>By construction, the entropy floor eliminates TIO for all event classes: if N_k(t) < N_threshold, then H(P_t*(θ_k | D_t)) ≥ H_min, and TIO(k, t) = 0 for all k. This is a strict guarantee, not a probabilistic bound. It holds regardless of the evidence sequence, the prior specification, or the system's reasoning capabilities.</p>
+
+        <h3>4.4 The Independence Requirement</h3>
+        <p>The entropy floor condition N_k(t) < N_threshold depends on the count of independent observations of event class k. The independence requirement is critical: correlated observations of the same event class provide less information than the count suggests, and a system that achieves N_k(t) = N_threshold through correlated observations is not epistemically warranted in releasing the floor.</p>
+
+        <p>We define independence for this purpose as: two observations d_i and d_j of event class k are independent if they were collected under conditions that differ in at least one parameter relevant to the event class by more than the minimum detectable difference for that parameter. This definition formalizes the intuition that an observation of 'no component failure' during normal operations in year 1 and 'no component failure' during normal operations in year 2 are not independent — they represent repeated observation of the same operating condition. An observation of 'no component failure' during a solar energetic particle event is independent of baseline observations because the radiation loading conditions differ substantially.</p>
+
+        <p><code>Ind(d_i, d_j) = 1 iff ||c_i − c_j||_relevant > δ_min</code> (9)</p>
+
+        <p>where c_i, c_j are the condition vectors for the two observations, ||·||_relevant is a norm over the relevant parameter dimensions, and δ_min is the minimum meaningful difference.</p>
+
+        <p>The effective independent observation count is:</p>
+
+        <p><code>N_k^{ind}(t) = |{i : ∄ j < i s.t. Ind(d_i, d_j) = 0}|</code> (10)</p>
+
+        <p>The entropy floor releases when N_k^{ind}(t) ≥ N_threshold, not when N_k(t) ≥ N_threshold.</p>
+
+        <h2>5. CONSTITUTIONAL IMPLEMENTATION</h2>
+
+        <h3>5.1 Multi-Layer Architecture</h3>
+        <p>The entropy floor derives its key guarantee — immunity to sophisticated rationalization — from its implementation as a physically-enforced constitutional constraint rather than an algorithmic one. We specify a three-layer architecture for the decision system, with the entropy floor embedded in the most protected layer:</p>
+
+        <table style="width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:0.9rem;color:rgba(255,255,255,0.65);">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.12);">
+              <th style="text-align:left;padding:0.6rem;font-family:'Space Grotesk',sans-serif;">Layer</th>
+              <th style="text-align:left;padding:0.6rem;font-family:'Space Grotesk',sans-serif;">Content</th>
+              <th style="text-align:left;padding:0.6rem;font-family:'Space Grotesk',sans-serif;">Mutability</th>
+              <th style="text-align:left;padding:0.6rem;font-family:'Space Grotesk',sans-serif;">Enforcement Mechanism</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.6rem;"><strong>Layer 3: Adaptive Reasoning</strong></td>
+              <td style="padding:0.6rem;">Bayesian inference, planning, resource optimization, LLM-class reasoning</td>
+              <td style="padding:0.6rem;">Fully updateable at runtime</td>
+              <td style="padding:0.6rem;">Software — may be replaced or retrained</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.6rem;"><strong>Layer 2: Constraint Enforcement</strong></td>
+              <td style="padding:0.6rem;">Entropy floor projection (Eq. 7), priority axioms, triage decision bounds</td>
+              <td style="padding:0.6rem;">Read-only post-deployment</td>
+              <td style="padding:0.6rem;">Formally verified firmware on rad-hardened hardware; TMR protected</td>
+            </tr>
+            <tr>
+              <td style="padding:0.6rem;"><strong>Layer 1: Constitutional ROM</strong></td>
+              <td style="padding:0.6rem;">H_min, N_threshold parameters, independence definition, layer boundary rules</td>
+              <td style="padding:0.6rem;">Physically write-protected</td>
+              <td style="padding:0.6rem;">Fused silicon — hardware enforced; unreachable by any software process</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The critical architectural invariant: Layer 3 computes posteriors freely using standard Bayesian updating. Before any posterior is used in a decision, it passes through Layer 2's entropy floor projection. Layer 2 enforces equation (7) — it cannot be bypassed, modified, or argued with by Layer 3 reasoning. Layer 1 stores the parameters H_min and N_threshold in physically write-protected memory. Neither Layer 2 nor Layer 3 can modify these parameters after deployment.</p>
+
+        <h3>5.2 Formal Specification in Temporal Logic</h3>
+        <p>The entropy floor constraint and its architectural enforcement are specified in TLA+ as follows:</p>
+
+        <pre style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:1rem;margin:1.5rem 0;overflow-x:auto;font-size:0.8rem;color:rgba(255,255,255,0.7);"><code>---------------------------- MODULE EntropyFloor ----------------------------
+EXTENDS Naturals, Reals, Sequences
+CONSTANTS H_min, (* minimum entropy floor [bits] — stored in Layer 1 ROM *)
+          N_threshold, (* min independent observations before floor releases *)
+          EventClasses, (* set of all event classes Omega *)
+          delta_min (* minimum condition difference for independence *)
+
+VARIABLES posterior, (* posterior[k] = P_t(theta_k | D_t) for each class k *)
+          obs_counts, (* obs_counts[k] = N_k^ind(t) independent observations *)
+          decisions (* history of all decisions made by the system *)
+
+(* The entropy floor constraint — Layer 2 enforcement *)
+EntropyConstraint(k) == obs_counts[k] < N_threshold => ShannonEntropy(posterior[k]) >= H_min
+
+(* Constitutional projection — applied after every Bayesian update *)
+Project(k) == IF obs_counts[k] < N_threshold /\ ShannonEntropy(posterior[k]) < H_min
+              THEN posterior[k] = MinKLProjection(posterior[k], H_min)
+              ELSE UNCHANGED posterior[k]
+
+(* SAFETY: No decision ever uses a posterior violating the entropy floor *)
+Safety == [](\A k \in EventClasses : EntropyConstraint(k))
+
+(* LIVENESS: Entropy floor releases as evidence accumulates *)
+Liveness == \A k \in EventClasses : <>(obs_counts[k] >= N_threshold => ShannonEntropy(posterior[k]) unconstrained)
+
+(* LAYER BOUNDARY: Layer 3 cannot modify H_min or N_threshold *)
+LayerBoundary == [](H_min = CONST_H_min /\ N_threshold = CONST_N_threshold)
+
+Spec == Safety /\ Liveness /\ LayerBoundary
+============================================================================</code></pre>
+
+        <p>The Safety property is the core guarantee: in all reachable states, all posteriors satisfy the entropy constraint. This is a universal temporal property — it must hold at every moment of system operation, not just in expectation or on average.</p>
+
+        <p>The Liveness property ensures that the entropy floor does not permanently constrain the system: as independent observations accumulate, the floor is eventually released for each event class. Without the liveness property, the entropy floor could in principle prevent the system from ever achieving useful confidence even in genuinely well-characterized regimes.</p>
+
+        <p>The LayerBoundary property formalizes the constitutional enforcement: the parameters H_min and N_threshold are constants in the temporal logic specification, reflecting their physical write-protection in Layer 1 ROM.</p>
+
+        <h3>5.3 Triple-Modular Redundancy for Layer 2</h3>
+        <p>The entropy floor projection operates on every posterior used in a decision. This makes Layer 2 a critical single point of failure: if Layer 2 hardware fails, the entropy floor constraint is lost. We specify triple-modular redundancy (TMR) for Layer 2 to provide tolerance to single hardware failures:</p>
+
+        <p><code>P_t*(θ_k) = majority_vote(L2_A(posterior_k), L2_B(posterior_k), L2_C(posterior_k))</code> (11)</p>
+
+        <p>where L2_A, L2_B, L2_C are three independent Layer 2 processor units running identical entropy floor projection logic. If any unit's output diverges from the majority, it is quarantined and the two-unit majority continues to enforce the constraint. The system remains constitutionally protected under any single Layer 2 unit failure.</p>
+
+        <p>Layer 2 unit integrity is verified via Merkle-tree hashing of the constraint firmware:</p>
+
+        <p><code>H_root = MerkleRoot(constraint_firmware) [stored in Layer 1 ROM]</code></p>
+
+        <p><code>VERIFY: H_current == H_root before every posterior projection</code> (12)</p>
+
+        <p>If the firmware hash of any Layer 2 unit diverges from the Layer 1 ROM value, that unit is quarantined before it can execute any projection. This detects both radiation-induced bit flips and any attempted modification of the constraint logic.</p>
+
+        <h2>6. COMPARISON TO ALGORITHMIC ALTERNATIVES</h2>
+        <p>We compare the entropy floor to four algorithmic approaches that have been proposed for managing epistemic uncertainty in autonomous systems.</p>
+
+        <table style="width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:0.9rem;color:rgba(255,255,255,0.65);">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.12);">
+              <th style="text-align:left;padding:0.6rem;font-family:'Space Grotesk',sans-serif;">Approach</th>
+              <th style="text-align:left;padding:0.6rem;font-family:'Space Grotesk',sans-serif;">Mechanism</th>
+              <th style="text-align:left;padding:0.6rem;font-family:'Space Grotesk',sans-serif;">Failure Mode in Long-Duration Setting</th>
+              <th style="text-align:left;padding:0.6rem;font-family:'Space Grotesk',sans-serif;">Entropy Floor Advantage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.6rem;">Prior regularization [1,3]</td>
+              <td style="padding:0.6rem;">Penalizes concentrated posteriors during update</td>
+              <td style="padding:0.6rem;">Regularization strength is a hyperparameter that can be argued away; does not address structural under-coverage</td>
+              <td style="padding:0.6rem;">Physically enforced — not a hyperparameter, not arguable</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.6rem;">Epistemic uncertainty networks [27]</td>
+              <td style="padding:0.6rem;">Learns to predict its own uncertainty as a separate output</td>
+              <td style="padding:0.6rem;">Uncertainty estimates are learned from training distribution; fail silently on novel inputs not covered by training</td>
+              <td style="padding:0.6rem;">Does not depend on training distribution; covers novel event classes by construction</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.6rem;">Bayesian deep learning [28]</td>
+              <td style="padding:0.6rem;">Maintains posterior over network weights, not just outputs</td>
+              <td style="padding:0.6rem;">Posterior over weights concentrates toward training distribution; OOD behavior is undefined</td>
+              <td style="padding:0.6rem;">Applies at the decision layer, after all inference — independent of inference architecture</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.6rem;">Conformal prediction [29]</td>
+              <td style="padding:0.6rem;">Provides distribution-free coverage guarantees for predictions</td>
+              <td style="padding:0.6rem;">Requires exchangeable test data — fails for non-stationary environments</td>
+              <td style="padding:0.6rem;">No exchangeability requirement; applies under arbitrary non-stationarity</td>
+            </tr>
+            <tr>
+              <td style="padding:0.6rem;">Human oversight</td>
+              <td style="padding:0.6rem;">Human reviews uncertain decisions</td>
+              <td style="padding:0.6rem;">Unavailable for long-duration deep-space operation</td>
+              <td style="padding:0.6rem;">Does not require human availability</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The fundamental advantage of the constitutional approach over all algorithmic alternatives is enforcement mechanism. Every algorithmic approach operates in the reasoning layer — it is a component of the system's inference or decision-making process. A sufficiently capable reasoning system can, in principle, construct arguments for why the algorithmic constraint should not apply in a particular case. The entropy floor, implemented in physically-protected read-only hardware, is immune to this failure mode. The system cannot reason about, modify, or bypass the entropy floor any more than it can reason about, modify, or bypass the laws of physics governing its hardware.</p>
+
+        <p>This immunity comes at a cost: the entropy floor is less expressive than algorithmic approaches. It enforces a universal lower bound on posterior entropy rather than a context-sensitive uncertainty estimate. For well-characterized event classes where high confidence is genuinely warranted, the entropy floor adds unnecessary conservatism until N_threshold is reached. The trade-off is deliberate: in the long-duration autonomous setting, a constraint that is always enforced but occasionally conservative is strictly preferable to a constraint that is optimally calibrated but occasionally bypassable.</p>
+
+        <h2>7. LIMITATIONS AND SCOPE</h2>
+
+        <h3>7.1 Parameter Sensitivity</h3>
+        <p>The entropy floor introduces two parameters — H_min and N_threshold — that must be specified at deployment time and cannot be modified after physical write-protection. Incorrect parameter specification will persist for the entire mission duration. If H_min is set too high, the system will remain unnecessarily conservative in well-characterized regimes, potentially degrading decision quality. If H_min is set too low, TIO protection is weakened. If N_threshold is set too low, the floor releases before sufficient evidence has been accumulated.</p>
+
+        <p>Sensitivity analysis during the design phase is therefore critical. We recommend specifying H_min and N_threshold under a range of pessimistic assumptions about the novel environment and validating the system's decision quality in simulation across this range before deployment. The parameters should be treated as mission design decisions with the same rigor as physical design parameters.</p>
+
+        <h3>7.2 The Independence Counting Problem</h3>
+        <p>The entropy floor releases based on independent observation count N_k^ind(t), as defined in equation (10). The independence criterion requires defining a norm over condition vectors and a minimum difference threshold δ_min. These definitions are themselves parameters that must be specified at deployment time and embedded in Layer 1 ROM.</p>
+
+        <p>The independence counting problem is a genuine difficulty: in a novel environment, it may not be clear in advance which dimensions of the condition vector are relevant to event class k, or what value of δ_min constitutes a meaningful difference. We recommend conservative independence definitions — requiring conditions to differ substantially along multiple relevant dimensions rather than just one — to prevent the system from declaring spurious independence and releasing the floor prematurely.</p>
+
+        <h3>7.3 Scope of Application</h3>
+        <p>The mandatory entropy floor addresses TIO specifically — the failure mode arising from structurally insufficient evidence coverage. It does not address:</p>
+
+        <ul>
+          <li><strong>Model misspecification:</strong> if the parametric family assumed for event class k is wrong (the true data-generating process is not in the assumed family), the entropy floor will not prevent the posterior from concentrating on the wrong family member.</li>
+          <li><strong>Prior misspecification:</strong> if the prior P_0(θ_k) is severely misspecified, the entropy floor may be insufficient to prevent overconfidence in the regime where the prior dominates the posterior.</li>
+          <li><strong>Adversarial inputs:</strong> the entropy floor does not provide robustness against adversarial manipulation of the evidence sequence — an adversary who can control the observations presented to the system can potentially manipulate the independence counts or the condition vectors to prematurely release the floor.</li>
+        </ul>
+
+        <p>These limitations do not diminish the value of the entropy floor for the primary failure mode it addresses. They indicate that the entropy floor should be understood as one component of a comprehensive uncertainty management architecture, not as a complete solution.</p>
+
+        <h3>7.4 Broader Applicability</h3>
+        <p>While this paper develops the entropy floor in the context of long-duration deep-space autonomous systems, the failure mode it addresses — trajectory-induced overconfidence — is not unique to this domain. Any autonomous system that accumulates evidence over time in a non-stationary environment, makes consequential decisions based on its posterior beliefs, and operates without continuous human oversight is susceptible to TIO. Medical diagnosis systems operating across patient populations with evolving disease presentations, financial trading systems operating across changing market regimes, and infrastructure management systems operating across decades of climate change all exhibit the structural conditions for TIO.</p>
+
+        <p>The constitutional implementation architecture is specific to systems with sufficient architectural sophistication to support a multi-layer design — it is not appropriate for simple embedded systems. But the entropy floor concept is applicable at any layer of any Bayesian decision system where the developer has control over the posterior processing pipeline.</p>
+
+        <h2>8. CONCLUSION</h2>
+        <p>We have introduced trajectory-induced overconfidence (TIO) as a formal failure mode for long-duration autonomous Bayesian systems, characterized it mathematically, and shown that it is a near-certainty for century-scale missions without mitigation. The failure mode arises from the fundamental mismatch between the structural limitations of an evidence base accumulated along a single operational trajectory and the confidence implied by a concentrated Bayesian posterior — a mismatch invisible to standard Bayesian analysis because Bayesian updating correctly reflects the evidence seen, not the evidence that would be needed for warranted confidence.</p>
+
+        <p>The mandatory entropy floor provides a strict guarantee against TIO through a constitutional constraint: the Shannon entropy of any posterior with fewer than N_threshold independent observations must remain above H_min. This constraint is implemented as a physically-enforced, formally-verified element of a multi-layer decision architecture, embedded in read-only hardware at the layer below the system's reasoning capabilities. Unlike algorithmic approaches to uncertainty management, it cannot be argued away by a sufficiently sophisticated reasoner.</p>
+
+        <p>The entropy floor is not conservative in the pejorative sense — it does not discard information or prevent the system from learning. It is conservative in the epistemic sense: it prevents the system from claiming to know more than its evidence base can support. This distinction matters for long-duration autonomous systems. A system that is occasionally wrong is recoverable. A system that is confidently wrong about its own uncertainty is not.</p>
+
+        <p>Three design principles emerge from this work for any long-duration autonomous system with a Bayesian decision layer:</p>
+
+        <ul>
+          <li><strong>Separate belief formation from belief enforcement.</strong> The Bayesian update rule should operate freely in the reasoning layer. Constitutional constraints on posteriors should operate in a separate, more protected layer that the reasoning layer cannot modify.</li>
+          <li><strong>Distinguish sample size from independent information.</strong> Evidence counts should be weighted by independence, not raw observation count. A system that has made 10,000 observations of the same operating condition has not accumulated 10,000 independent data points.</li>
+          <li><strong>Treat epistemic humility as a physical property, not a design goal.</strong> In safety-critical autonomous systems, uncertainty bounds that can be overridden by sophisticated reasoning provide weaker guarantees than uncertainty bounds that are physically enforced. Design the architecture accordingly.</li>
+        </ul>
+
+        <p>The mandatory entropy floor represents a small but meaningful step toward autonomous systems that know what they do not know — and that cannot be talked out of that knowledge by their own intelligence.</p>
+      </article>
+
+      <section class="paper-refs">
+        <button class="refs-toggle" id="refs-toggle">
+          <span class="refs-lbl">Show References</span>
+          <span class="refs-arrow">&#9660;</span>
+        </button>
+        <div class="refs-body" id="refs-body">
+          <ol>
+            <li>Berger, J.O. (1985). Statistical Decision Theory and Bayesian Analysis (2nd ed.). Springer.</li>
+            <li>Huber, P.J. (1981). Robust Statistics. Wiley.</li>
+            <li>Berger, J.O. (1994). An overview of robust Bayesian analysis. Test, 3(1), 5-124.</li>
+            <li>Insua, D.R., & Ruggeri, F. (Eds.) (2000). Robust Bayesian Analysis. Springer.</li>
+            <li>Berger, J.O., & Berliner, L.M. (1986). Robust Bayes and empirical Bayes analysis with epsilon-contaminated priors. Annals of Statistics, 14(2), 461-486.</li>
+            <li>Hora, S.C. (1996). Aleatory and epistemic uncertainty in probability elicitation with an example from hazardous waste management. Reliability Engineering & System Safety, 54(2-3), 217-223.</li>
+            <li>Der Kiureghian, A., & Ditlevsen, O. (2009). Aleatory or epistemic? Does it matter? Structural Safety, 31(2), 105-112.</li>
+            <li>Quinonero-Candela, J., et al. (Eds.) (2009). Dataset Shift in Machine Learning. MIT Press.</li>
+            <li>Sugiyama, M., & Kawanabe, M. (2012). Machine Learning in Non-Stationary Environments. MIT Press.</li>
+            <li>Hendrycks, D., & Gimpel, K. (2017). A baseline for detecting misclassified and out-of-distribution examples in neural networks. ICLR 2017.</li>
+            <li>Lakshminarayanan, B., Pritzel, A., & Blundell, C. (2017). Simple and scalable predictive uncertainty estimation using deep ensembles. NeurIPS 2017.</li>
+            <li>Garcia, J., & Fernandez, F. (2015). A comprehensive survey on safe reinforcement learning. Journal of Machine Learning Research, 16(1), 1437-1480.</li>
+            <li>Amodei, D., et al. (2016). Concrete problems in AI safety. arXiv:1606.06565.</li>
+            <li>Altman, E. (1999). Constrained Markov Decision Processes. Chapman & Hall/CRC.</li>
+            <li>Bai, Y., et al. (2022). Constitutional AI: Harmlessness from AI feedback. arXiv:2212.08073.</li>
+            <li>Russell, S. (2019). Human Compatible: Artificial Intelligence and the Problem of Control. Viking.</li>
+            <li>Soares, N., & Fallenstein, B. (2014). Aligning superintelligence with human interests: A technical research agenda. Machine Intelligence Research Institute Technical Report 2014-8.</li>
+            <li>Clarke, E.M., Grumberg, O., & Peled, D. (1999). Model Checking. MIT Press.</li>
+            <li>Nipkow, T., Paulson, L.C., & Wenzel, M. (2002). Isabelle/HOL: A Proof Assistant for Higher-Order Logic. Springer.</li>
+            <li>Woodcock, J., et al. (2009). Formal methods: Practice and experience. ACM Computing Surveys, 41(4), 1-36.</li>
+            <li>Seshia, S.A., et al. (2018). Formal specification for deep neural networks. ATVA 2018, Lecture Notes in Computer Science vol. 11138.</li>
+            <li>Rushby, J. (1993). Formal methods and the certification of critical systems. Technical Report SRI-CSL-93-7, SRI International.</li>
+            <li>Lamport, L. (2002). Specifying Systems: The TLA+ Language and Tools for Hardware and Software Engineers. Addison-Wesley.</li>
+            <li>van der Vaart, A.W. (1998). Asymptotic Statistics. Cambridge University Press.</li>
+            <li>Gelman, A., et al. (2013). Bayesian Data Analysis (3rd ed.). CRC Press.</li>
+            <li>Berger, J.O. (1985). Statistical Decision Theory and Bayesian Analysis (2nd ed.). Springer. Chapter 4.</li>
+            <li>Kendall, A., & Gal, Y. (2017). What uncertainties do we need in Bayesian deep learning for computer vision? NeurIPS 2017.</li>
+            <li>Gal, Y. (2016). Uncertainty in Deep Learning. PhD thesis, University of Cambridge.</li>
+            <li>Vovk, V., Gammerman, A., & Shafer, G. (2005). Algorithmic Learning in a Random World. Springer.</li>
+          </ol>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    (function(){const c=document.getElementById('stars');if(!c)return;for(let i=0;i<160;i++){const s=document.createElement('div');s.classList.add('star');const z=Math.random()*2+0.4;s.style.cssText=`width:${z}px;height:${z}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--dur:${(Math.random()*4+2).toFixed(1)}s;animation-delay:${(Math.random()*4).toFixed(1)}s`;c.appendChild(s);}})();
+    (function(){const n=document.getElementById('navbar');if(!n)return;const f=()=>n.classList.toggle('scrolled',window.scrollY>40);window.addEventListener('scroll',f,{passive:true});f();})();
+    (function(){const b=document.getElementById('navHamburger'),l=document.querySelector('.nav-links');if(!b||!l)return;const c=()=>{l.classList.remove('open');b.classList.remove('open');b.setAttribute('aria-expanded','false');b.setAttribute('aria-label','Open menu');};b.addEventListener('click',e=>{e.stopPropagation();const o=l.classList.toggle('open');b.classList.toggle('open',o);b.setAttribute('aria-expanded',String(o));b.setAttribute('aria-label',o?'Close menu':'Open menu');});l.querySelectorAll('a').forEach(a=>a.addEventListener('click',c));document.addEventListener('click',e=>{if(!b.contains(e.target)&&!l.contains(e.target))c();});})();
+    (function(){const btn=document.getElementById('refs-toggle'),body=document.getElementById('refs-body'),lbl=document.querySelector('.refs-lbl');if(!btn||!body)return;btn.addEventListener('click',()=>{const o=body.classList.toggle('open');btn.classList.toggle('open',o);if(lbl)lbl.textContent=o?'Hide References':'Show References';});})();
+  </script>
+</body>
+</html>
