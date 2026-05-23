@@ -43,422 +43,517 @@
 const fadeObs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fadeObs.unobserve(e.target); } }), { threshold: 0.1 });
 document.querySelectorAll('.fade-in').forEach((el, i) => { el.style.transitionDelay = `${(i%4)*0.07}s`; fadeObs.observe(el); });
 
-// ===== Visualizer =====
+// ===== Visualizer — Mission Control Rebuild =====
 (function () {
 
-  function svgEl(tag, attrs) {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
-    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v)); return el;
+  // ── Color palette ──
+  const C = {
+    bg:     '#010409',
+    border: 'rgba(255,255,255,0.08)',
+    grid:   'rgba(255,255,255,0.05)',
+    muted:  'rgba(255,255,255,0.22)',
+    text:   'rgba(255,255,255,0.65)',
+    green:  '#17b978',
+    red:    '#ff4444',
+    blue:   '#4a90e8',
+    orange: '#e8a44a',
+    purple: '#b04ae8',
+  };
+
+  // ── Module state ──
+  let heraldOn    = true;
+  let heraldAmp   = 0;
+  let heraldPulse = 0;
+  let heraldPhase = 0;
+
+  let gammaDrawPct   = 0;   // 0–100, how far curves are animated
+  let gammaScrubYear = 0;   // 0–100, scrubber position
+  let gammaPlaying   = true;
+  let gammaT0        = null;
+
+  let axiomN       = 1;
+  let axiomLastTs  = null;
+  let axiomResetAt = null;
+
+  let rafId = null;
+
+  // ── Canvas sizing ──
+  function resizeAll() {
+    // Use the active panel width as reference for hidden panels
+    const ref = document.querySelector('.viz-panel.active') || document.querySelector('.viz-panel');
+    const refW = ref ? (ref.clientWidth - 2) : 700;
+    const halfW = Math.max(Math.floor((refW - 18) / 2), 120);
+
+    [['gamma-canvas', 280], ['herald-canvas', 280]].forEach(([id, h]) => {
+      const c = document.getElementById(id); if (!c) return;
+      c.width  = c.offsetWidth > 10 ? c.offsetWidth : refW;
+      c.height = h;
+    });
+    [['axiom-without', 220], ['axiom-with', 220]].forEach(([id, h]) => {
+      const c = document.getElementById(id); if (!c) return;
+      c.width  = c.offsetWidth > 10 ? c.offsetWidth : halfW;
+      c.height = h;
+    });
+  }
+  window.addEventListener('resize', resizeAll);
+
+  // ── Tab switching ──
+  document.querySelectorAll('.viz-tab').forEach(tab => tab.addEventListener('click', () => {
+    document.querySelectorAll('.viz-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.viz-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const p = document.getElementById('viz-' + tab.dataset.tab);
+    if (p) p.classList.add('active');
+    setTimeout(resizeAll, 30);
+  }));
+
+  // ════════════════════════════════
+  //  Γ_coupling — Mission Timeline
+  // ════════════════════════════════
+  const COUPLING_YEAR = 28;
+  const FAIL_THRESH   = 0.35;
+
+  function relEM(t)  { return t<=COUPLING_YEAR ? 1-(t/COUPLING_YEAR)*0.13    : 0.87*Math.exp(-(t-COUPLING_YEAR)*0.036); }
+  function relTMF(t) { return t<=COUPLING_YEAR ? 1-(t/COUPLING_YEAR)*0.10    : 0.90*Math.exp(-(t-COUPLING_YEAR)*0.029); }
+  function relRAD(t) { return t<=COUPLING_YEAR ? 1-(t/COUPLING_YEAR)*0.115   : 0.885*Math.exp(-(t-COUPLING_YEAR)*0.042); }
+
+  function updateGammaBadge(yr) {
+    const m = Math.min(relEM(yr), relTMF(yr), relRAD(yr));
+    const el = document.getElementById('gamma-status'); if (!el) return;
+    if      (m <= FAIL_THRESH)        { el.textContent='● FAILURE';  el.className='mc-badge mc-failure';  }
+    else if (m <= FAIL_THRESH + 0.22) { el.textContent='● WARNING';  el.className='mc-badge mc-warning';  }
+    else                              { el.textContent='● NOMINAL';  el.className='mc-badge mc-nominal';  }
   }
 
-  // Module-level state
-  let gammaTimers = [], gammaYearInterval = null;
-  let heraldRaf = null, heraldOn = true;
-  let axiomAutoTimer = null, axiomWithMode = true, axiomReady = false;
+  function setupGamma() {
+    const sl  = document.getElementById('gamma-year');
+    const val = document.getElementById('gamma-year-val');
+    const rpl = document.getElementById('gamma-replay');
+    if (sl && !sl.dataset.wired) {
+      sl.dataset.wired = '1';
+      sl.addEventListener('input', () => {
+        gammaScrubYear = +sl.value;
+        gammaDrawPct   = Math.max(gammaDrawPct, gammaScrubYear);
+        gammaPlaying   = false;
+        if (val) val.textContent = gammaScrubYear + ' yr';
+        updateGammaBadge(gammaScrubYear);
+      });
+    }
+    if (rpl && !rpl.dataset.wired) {
+      rpl.dataset.wired = '1';
+      rpl.addEventListener('click', () => {
+        gammaDrawPct = 0; gammaScrubYear = 0; gammaPlaying = true; gammaT0 = null;
+        if (sl)  sl.value = 0;
+        if (val) val.textContent = '0 yr';
+        updateGammaBadge(0);
+      });
+    }
+  }
 
-  // ─────────────────────────────────────────
-  // Γ_coupling
-  // ─────────────────────────────────────────
-  function initGamma() {
-    gammaTimers.forEach(clearTimeout); gammaTimers = [];
-    if (gammaYearInterval) { clearInterval(gammaYearInterval); gammaYearInterval = null; }
+  function drawGamma(ts) {
+    const canvas = document.getElementById('gamma-canvas');
+    if (!canvas || canvas.width < 10) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PL=56, PR=22, PT=32, PB=40;
+    const pw = W-PL-PR, ph = H-PT-PB;
 
-    const svg       = document.getElementById('gamma-svg');
-    const speedEl   = document.getElementById('gamma-speed');
-    const yearsEl   = document.getElementById('gamma-years');
-    const statusEl  = document.getElementById('gamma-status');
-    const tipEl     = document.getElementById('gamma-tooltip');
-    if (!svg) return;
-    svg.innerHTML = '';
+    if (gammaPlaying) {
+      if (!gammaT0) gammaT0 = ts;
+      gammaDrawPct   = Math.min(100, ((ts - gammaT0) / 3000) * 100);
+      gammaScrubYear = Math.round(gammaDrawPct);
+      const sl  = document.getElementById('gamma-year');
+      const val = document.getElementById('gamma-year-val');
+      if (sl)  sl.value = gammaScrubYear;
+      if (val) val.textContent = gammaScrubYear + ' yr';
+      updateGammaBadge(gammaScrubYear);
+      if (gammaDrawPct >= 100) gammaPlaying = false;
+    }
 
-    const SPEEDS = [0.5, 1, 1.5, 2.5, 4];
-    const spd = speedEl ? SPEEDS[+speedEl.value - 1] : 1;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
 
-    if (yearsEl)  yearsEl.textContent = '0';
-    if (statusEl) { statusEl.textContent = '\u25cf NOMINAL'; statusEl.className = 'mission-badge badge-nominal'; }
+    // Horizontal grid & Y labels
+    ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const y = PT + (i/5)*ph;
+      ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(PL+pw, y); ctx.stroke();
+      ctx.fillStyle = C.muted; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText((1-i/5).toFixed(1), PL-8, y+3.5);
+    }
+    // X labels
+    for (let yr = 0; yr <= 100; yr += 20) {
+      const x = PL + (yr/100)*pw;
+      ctx.beginPath(); ctx.moveTo(x, PT); ctx.lineTo(x, PT+ph); ctx.stroke();
+      ctx.fillStyle = C.muted; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(yr === 0 ? 'Launch' : yr+'yr', x, PT+ph+16);
+    }
+    // Axis labels
+    ctx.save(); ctx.translate(14, PT+ph/2); ctx.rotate(-Math.PI/2);
+    ctx.fillStyle = C.muted; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('RELIABILITY', 0, 0); ctx.restore();
+    ctx.fillStyle = C.muted; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('MISSION YEAR', PL+pw/2, PT+ph+30);
 
-    const W = 700, H = 420, cx = W/2, cy = 215;
-    const mechs = [
-      { lbl:'Electromigration',     sub:'electrons slowly push metal atoms',    x:118, y:90,  col:'#4a90e8',
-        tip:'Metal ions drift along current flow paths, gradually widening grain boundaries. Over decades, this creates voids that sever electrical connections.' },
-      { lbl:'Thermo-Mech. Fatigue', sub:'extreme heat/cold cracks connections', x:582, y:90,  col:'#e8a44a',
-        tip:'Thermal cycling between deep-space cold and operational heat stresses solder joints cyclically. Micro-cracks propagate until the joint fractures completely.' },
-      { lbl:'Radiation Damage',     sub:'cosmic rays knock atoms out of place', x:350, y:385, col:'#b04ae8',
-        tip:'High-energy particles displace lattice atoms, creating defect clusters that act as charge traps. These degrade transistor performance incrementally over decades.' },
+    // Γ coupling zone
+    const coupX = PL + (COUPLING_YEAR/100)*pw;
+    const coupGrad = ctx.createLinearGradient(coupX,0,coupX+pw*0.055,0);
+    coupGrad.addColorStop(0,'rgba(255,68,68,0.08)'); coupGrad.addColorStop(1,'rgba(255,68,68,0)');
+    ctx.fillStyle = coupGrad; ctx.fillRect(coupX, PT, pw*0.055, ph);
+    ctx.fillStyle='rgba(255,100,100,0.45)'; ctx.font='8px Inter,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('\u0393 coupling', coupX+pw*0.027, PT+11);
+
+    // Failure threshold
+    const threshY = PT + ph*(1-FAIL_THRESH);
+    const minAtScrub = Math.min(relEM(gammaScrubYear), relTMF(gammaScrubYear), relRAD(gammaScrubYear));
+    const crossed = minAtScrub <= FAIL_THRESH;
+    if (crossed) {
+      ctx.strokeStyle='rgba(255,68,68,0.2)'; ctx.lineWidth=10;
+      ctx.beginPath(); ctx.moveTo(PL,threshY); ctx.lineTo(PL+pw,threshY); ctx.stroke();
+    }
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle = crossed ? C.red : 'rgba(255,68,68,0.4)';
+    ctx.lineWidth   = crossed ? 2 : 1.2;
+    ctx.beginPath(); ctx.moveTo(PL,threshY); ctx.lineTo(PL+pw,threshY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = crossed ? C.red : 'rgba(255,68,68,0.45)';
+    ctx.font='8.5px Inter,sans-serif'; ctx.textAlign='left';
+    ctx.fillText('failure threshold', PL+6, threshY-5);
+
+    // Curves
+    const curves = [
+      {fn:relEM,  col:C.blue,   name:'Electromigration'},
+      {fn:relTMF, col:C.orange, name:'Thermo-Mech Fatigue'},
+      {fn:relRAD, col:C.purple, name:'Radiation Damage'},
+    ];
+    curves.forEach(({fn, col}) => {
+      const endRel  = fn(gammaDrawPct);
+      const belowEnd = endRel <= FAIL_THRESH;
+      // Fill
+      const grad = ctx.createLinearGradient(0,PT,0,PT+ph);
+      grad.addColorStop(0, col+'22'); grad.addColorStop(1, col+'00');
+      ctx.beginPath(); ctx.moveTo(PL, PT+ph*(1-fn(0)));
+      for (let t=0.5; t<=gammaDrawPct; t+=0.5) ctx.lineTo(PL+(t/100)*pw, PT+ph*(1-fn(t)));
+      const ex = PL+(gammaDrawPct/100)*pw;
+      ctx.lineTo(ex, PT+ph); ctx.lineTo(PL, PT+ph); ctx.closePath();
+      ctx.fillStyle=grad; ctx.fill();
+      // Line
+      const atScrubRel = fn(gammaScrubYear);
+      ctx.beginPath(); ctx.moveTo(PL, PT+ph*(1-fn(0)));
+      for (let t=0.5; t<=gammaDrawPct; t+=0.5)
+        ctx.lineTo(PL+(t/100)*pw, PT+ph*(1-fn(t)));
+      ctx.strokeStyle = atScrubRel<=FAIL_THRESH ? C.red : col;
+      ctx.lineWidth=2.2; ctx.stroke();
+      // Tip dot
+      if (gammaDrawPct > 0) {
+        ctx.beginPath(); ctx.arc(ex, PT+ph*(1-endRel), 3.5, 0, Math.PI*2);
+        ctx.fillStyle = belowEnd ? C.red : col; ctx.fill();
+      }
+    });
+
+    // Scrubber line
+    const sx = PL+(gammaScrubYear/100)*pw;
+    ctx.strokeStyle='rgba(255,255,255,0.32)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(sx,PT); ctx.lineTo(sx,PT+ph); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.font='9px Space Grotesk,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Yr '+gammaScrubYear, sx, PT-11);
+
+    // Legend
+    curves.forEach(({col,name},i) => {
+      const lx=PL+pw-148, ly=PT+16+i*17;
+      ctx.fillStyle=col; ctx.fillRect(lx,ly-3,16,2.5);
+      ctx.fillStyle=C.text; ctx.font='8.5px Inter,sans-serif'; ctx.textAlign='left';
+      ctx.fillText(name, lx+20, ly);
+    });
+  }
+
+  // ════════════════════════════════
+  //  AXIOM — Live Posterior
+  // ════════════════════════════════
+  const A_BASE  = 145;
+  const A_FLOOR = 26;
+
+  function hBits(sigma) { return (0.5*Math.log(2*Math.PI*Math.E*sigma*sigma))/Math.LN2; }
+  function gauss(x, mu, sig) { return Math.exp(-0.5*((x-mu)/sig)**2)/(sig*Math.sqrt(2*Math.PI)); }
+
+  function setupAxiom() {
+    const rpl = document.getElementById('axiom-reset');
+    if (rpl && !rpl.dataset.wired) {
+      rpl.dataset.wired = '1';
+      rpl.addEventListener('click', ()=>{ axiomN=1; axiomLastTs=null; axiomResetAt=null; });
+    }
+  }
+
+  function drawAxiomPane(id, withAxiom, n) {
+    const canvas = document.getElementById(id);
+    if (!canvas || canvas.width < 10) return;
+    const ctx = canvas.getContext('2d');
+    const W=canvas.width, H=canvas.height, mu=W/2;
+    const PL=14, PR=14, PT=18, PB=26;
+    const pw=W-PL-PR, ph=H-PT-PB;
+
+    const sigRaw  = A_BASE / Math.sqrt(n);
+    const sigma   = withAxiom ? Math.max(sigRaw, A_FLOOR) : sigRaw;
+    const atFloor = withAxiom && sigma <= A_FLOOR+0.5;
+    const danger  = !withAxiom && sigRaw < A_FLOOR*1.5;
+
+    // DOM updates
+    const eEl = document.getElementById(withAxiom?'entropy-yes':'entropy-no');
+    const sEl = document.getElementById(withAxiom?'axiom-status-yes':'axiom-status-no');
+    if (eEl) eEl.textContent = hBits(sigma).toFixed(2);
+    if (sEl) {
+      if      (danger)    { sEl.textContent='\u26a0 OVERCONFIDENT'; sEl.className='mc-badge mc-failure'; }
+      else if (atFloor)   { sEl.textContent='\u2713 FLOOR ACTIVE';  sEl.className='mc-badge mc-nominal'; }
+      else                { sEl.textContent='\u25cf NOMINAL';        sEl.className='mc-badge mc-nominal'; }
+    }
+
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=C.bg; ctx.fillRect(0,0,W,H);
+
+    // Grid
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+    for (let i=0;i<=3;i++) { const y=PT+i*(ph/3); ctx.beginPath();ctx.moveTo(PL,y);ctx.lineTo(W-PR,y);ctx.stroke(); }
+
+    // Danger shade
+    if (danger) { ctx.fillStyle='rgba(255,68,68,0.04)'; ctx.fillRect(PL,PT,pw,ph); }
+
+    // Compute peak for Y scale
+    const peakSig = Math.max(sigma, 3.5);
+    const peak    = gauss(mu, mu, peakSig);
+    const scaleY  = ph / (peak * 1.25);
+
+    // Ghost no-floor curve (WITH AXIOM only, when floor is active)
+    if (withAxiom && sigRaw < A_FLOOR*2.8) {
+      const gp = gauss(mu, mu, sigRaw);
+      const gs = ph / (gp * 1.25);
+      ctx.save(); ctx.setLineDash([4,4]);
+      ctx.strokeStyle='rgba(255,100,50,0.35)'; ctx.lineWidth=1.4;
+      ctx.beginPath();
+      for (let x=PL;x<=W-PR;x++) { const y=H-PB-gauss(x,mu,sigRaw)*gs; x===PL?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+      ctx.stroke(); ctx.restore();
+    }
+
+    // Entropy floor line
+    if (withAxiom) {
+      const fy = H-PB-gauss(mu,mu,A_FLOOR)*scaleY;
+      if (atFloor) {
+        ctx.strokeStyle='rgba(74,144,232,0.12)'; ctx.lineWidth=10;
+        ctx.beginPath();ctx.moveTo(PL,fy);ctx.lineTo(W-PR,fy);ctx.stroke();
+      }
+      ctx.setLineDash([5,4]);
+      ctx.strokeStyle = atFloor?'rgba(90,168,255,0.85)':'rgba(74,144,232,0.28)';
+      ctx.lineWidth=1.4; ctx.beginPath();ctx.moveTo(PL,fy);ctx.lineTo(W-PR,fy);ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle=atFloor?'rgba(90,168,255,0.8)':'rgba(74,144,232,0.38)';
+      ctx.font='8px Inter,sans-serif'; ctx.textAlign='right';
+      ctx.fillText('entropy floor',W-PR-2,fy-4); ctx.textAlign='left';
+    }
+
+    // Fill
+    const grad = ctx.createLinearGradient(0,PT,0,H-PB);
+    grad.addColorStop(0, danger?'rgba(255,68,68,0.3)':(atFloor?'rgba(74,144,232,0.38)':'rgba(74,144,232,0.15)'));
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.moveTo(PL,H-PB);
+    for (let x=PL;x<=W-PR;x++) ctx.lineTo(x, H-PB-gauss(x,mu,sigma)*scaleY);
+    ctx.lineTo(W-PR,H-PB); ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+    // Glow when at floor
+    if (atFloor) {
+      ctx.beginPath();
+      for (let x=PL;x<=W-PR;x++){const y=H-PB-gauss(x,mu,sigma)*scaleY;x===PL?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+      ctx.strokeStyle='rgba(74,144,232,0.16)'; ctx.lineWidth=10; ctx.stroke();
+    }
+
+    // Main curve
+    ctx.beginPath();
+    for (let x=PL;x<=W-PR;x++){const y=H-PB-gauss(x,mu,sigma)*scaleY;x===PL?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.strokeStyle = danger?C.red:(atFloor?'#5aadff':C.blue);
+    ctx.lineWidth = danger?3:(atFloor?2.8:2.2); ctx.stroke();
+
+    // Stats overlay
+    ctx.fillStyle=C.muted; ctx.font='8.5px Space Grotesk,sans-serif'; ctx.textAlign='left';
+    ctx.fillText('n='+n, PL+4, PT+14);
+    ctx.textAlign='right'; ctx.fillText('\u03c3='+sigma.toFixed(1), W-PR-3, PT+14); ctx.textAlign='left';
+
+    // X axis
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(PL,H-PB);ctx.lineTo(W-PR,H-PB);ctx.stroke();
+    ctx.fillStyle=C.muted; ctx.font='8px Inter,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('\u03b8 (parameter)', W/2, H-7);
+  }
+
+  // ════════════════════════════════
+  //  HERALD — Power vs Stability
+  // ════════════════════════════════
+  function setupHerald() {
+    const tog = document.getElementById('herald-toggle');
+    const psl = document.getElementById('herald-power');
+    const pvl = document.getElementById('herald-power-val');
+    if (tog && !tog.dataset.wired) {
+      tog.dataset.wired='1';
+      tog.addEventListener('click',()=>{
+        heraldOn = !heraldOn;
+        tog.textContent = heraldOn ? 'HERALD ON' : 'HERALD OFF';
+        tog.className   = heraldOn ? 'mc-btn mc-btn-green' : 'mc-btn mc-btn-red';
+      });
+    }
+    if (psl && !psl.dataset.wired) {
+      psl.dataset.wired='1';
+      psl.addEventListener('input',()=>{ if(pvl) pvl.textContent=psl.value+' MW'; });
+    }
+  }
+
+  function drawHerald() {
+    const canvas = document.getElementById('herald-canvas');
+    if (!canvas || canvas.width < 10) return;
+    const ctx = canvas.getContext('2d');
+    const W=canvas.width, H=canvas.height, midX=W/2;
+    const psl   = document.getElementById('herald-power');
+    const power = psl ? +psl.value : 15;
+
+    heraldPulse += 0.08; heraldPhase += 0.05;
+    const tgtAmp = heraldOn ? 0 : power * 0.65;
+    heraldAmp += (tgtAmp - heraldAmp) * 0.04;
+
+    // Status badge
+    const sEl = document.getElementById('herald-status');
+    if (sEl) {
+      if      (!heraldOn && power>55) { sEl.textContent='\u26a0 FAILURE IMMINENT'; sEl.className='mc-badge mc-failure'; }
+      else if (!heraldOn && power>25) { sEl.textContent='\u25cf WARNING';          sEl.className='mc-badge mc-warning'; }
+      else                            { sEl.textContent='\u25cf NOMINAL';          sEl.className='mc-badge mc-nominal'; }
+    }
+
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=C.bg; ctx.fillRect(0,0,W,H);
+
+    // Center divider
+    ctx.strokeStyle=C.border; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.moveTo(midX,12);ctx.lineTo(midX,H-12);ctx.stroke(); ctx.setLineDash([]);
+
+    // Section labels
+    ctx.font='8.5px Inter,sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle='rgba(74,144,232,0.6)';  ctx.fillText('COMPUTE CLUSTER',   midX/2,         17);
+    ctx.fillStyle='rgba(232,164,74,0.6)';  ctx.fillText('ATTITUDE CONTROL',  midX+midX/2,    17);
+
+    // ── Left: Compute cluster ──
+    const npts = [
+      {x:midX*0.18,y:H*0.25},{x:midX*0.5,y:H*0.18},{x:midX*0.82,y:H*0.25},
+      {x:midX*0.18,y:H*0.65},{x:midX*0.5,y:H*0.75},{x:midX*0.82,y:H*0.65},
     ];
 
-    const defs = svgEl('defs',{});
-    mechs.forEach((m,i) => {
-      const f = svgEl('filter',{id:'gg'+i,x:'-80%',y:'-80%',width:'260%',height:'260%'});
-      f.appendChild(svgEl('feGaussianBlur',{stdDeviation:'7',result:'b'}));
-      const fm = svgEl('feMerge',{}); fm.appendChild(svgEl('feMergeNode',{in:'b'})); fm.appendChild(svgEl('feMergeNode',{in:'SourceGraphic'}));
-      f.appendChild(fm); defs.appendChild(f);
-    });
-    const gf = svgEl('filter',{id:'gf',x:'-120%',y:'-120%',width:'340%',height:'340%'});
-    gf.appendChild(svgEl('feGaussianBlur',{stdDeviation:'16',result:'b'}));
-    const gfm = svgEl('feMerge',{}); gfm.appendChild(svgEl('feMergeNode',{in:'b'})); gfm.appendChild(svgEl('feMergeNode',{in:'SourceGraphic'}));
-    gf.appendChild(gfm); defs.appendChild(gf);
-    svg.appendChild(defs);
+    const fOp = Math.min(power/65,1) * (heraldOn ? 0.24 : 0.62);
+    npts.forEach((np,ni) => {
+      const pv = 0.3 + 0.7*Math.abs(Math.sin(heraldPulse+ni*0.8));
 
-    const lines = mechs.map(m => {
-      const l = svgEl('line',{x1:m.x,y1:m.y,x2:cx,y2:cy,stroke:m.col,'stroke-width':'1.8','stroke-dasharray':'8 5',opacity:'0'});
-      svg.appendChild(l); return l;
-    });
-
-    mechs.forEach((m,i) => {
-      const g = svgEl('g',{style:'cursor:pointer'});
-      g.appendChild(svgEl('circle',{cx:m.x,cy:m.y,r:'50',fill:'none',stroke:m.col,'stroke-width':'1',opacity:'0.15'}));
-      g.appendChild(svgEl('circle',{cx:m.x,cy:m.y,r:'38',fill:m.col+'20',stroke:m.col,'stroke-width':'2',filter:'url(#gg'+i+')'}));
-      const t1 = svgEl('text',{x:m.x,y:m.y-3,'text-anchor':'middle',fill:m.col,'font-size':'11.5','font-family':'Space Grotesk,sans-serif','font-weight':'700','pointer-events':'none'});
-      t1.textContent = m.lbl.split(' ')[0];
-      const t2 = svgEl('text',{x:m.x,y:m.y+12,'text-anchor':'middle',fill:m.col+'bb','font-size':'9.5','font-family':'Inter,sans-serif','pointer-events':'none'});
-      t2.textContent = m.lbl.split(' ').slice(1).join(' ');
-      const subY = m.y < H/2 ? m.y+62 : m.y-58;
-      const sub = svgEl('text',{x:m.x,y:subY,'text-anchor':'middle',fill:'rgba(200,215,235,0.5)','font-size':'9.5','font-family':'Inter,sans-serif','font-style':'italic','pointer-events':'none'});
-      sub.textContent = '"'+m.sub+'"';
-      g.appendChild(t1); g.appendChild(t2); g.appendChild(sub);
-      if (tipEl) {
-        g.addEventListener('mousemove', e => {
-          const r = svg.closest('.viz-panel').getBoundingClientRect();
-          tipEl.style.left = (e.clientX - r.left + 12)+'px';
-          tipEl.style.top  = (e.clientY - r.top  + 12)+'px';
-          tipEl.textContent = m.tip; tipEl.style.opacity = '1';
-        });
-        g.addEventListener('mouseleave', () => { tipEl.style.opacity = '0'; });
+      // Magnetic field line to divider
+      const lineOp = (fOp*pv).toFixed(2);
+      if (+lineOp > 0.02) {
+        const cpx = np.x+(midX-np.x)*0.45+Math.sin(heraldPhase+ni)*11;
+        const cpy = np.y+(H/2-np.y)*0.22;
+        const ey  = H/2+(ni-2.5)*H*0.11;
+        ctx.beginPath(); ctx.moveTo(np.x,np.y); ctx.quadraticCurveTo(cpx,cpy,midX-10,ey);
+        ctx.strokeStyle = heraldOn ? 'rgba(23,185,120,'+lineOp+')' : 'rgba(74,144,232,'+lineOp+')';
+        ctx.lineWidth=1; ctx.stroke();
       }
-      svg.appendChild(g);
+      // Glow halo
+      const rv = Math.max(0,Math.sin(heraldPulse*0.7+ni*0.65));
+      ctx.beginPath(); ctx.arc(np.x,np.y,13+rv*power*0.10,0,Math.PI*2);
+      ctx.fillStyle='rgba(74,144,232,'+(0.04+0.06*(power/100)).toFixed(2)+')'; ctx.fill();
+      // Core node
+      ctx.globalAlpha = pv;
+      ctx.beginPath(); ctx.arc(np.x,np.y,5+(power/100)*3.5,0,Math.PI*2);
+      ctx.fillStyle=C.blue; ctx.fill(); ctx.globalAlpha=1;
     });
 
-    const failG = svgEl('g',{opacity:'0'});
-    failG.appendChild(svgEl('circle',{cx,cy,r:'54',fill:'#ff444428',stroke:'#ff4444','stroke-width':'2.5',filter:'url(#gf)'}));
-    const ft = svgEl('text',{x:cx,y:cy+5,'text-anchor':'middle',fill:'#ff7777','font-size':'12.5','font-family':'Space Grotesk,sans-serif','font-weight':'700'});
-    ft.textContent = 'Synergistic Failure';
-    const fl = svgEl('text',{x:cx,y:cy+72,'text-anchor':'middle',fill:'#ff444466','font-size':'10.5','font-family':'Inter,sans-serif'});
-    fl.textContent = '\u0393_coupling > threshold';
-    failG.appendChild(ft); failG.appendChild(fl); svg.appendChild(failG);
+    // Power readout
+    ctx.fillStyle='rgba(74,144,232,0.4)'; ctx.font='8px Space Grotesk,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(power+' MW', midX*0.5, H-10);
 
-    function shockwave() {
-      for (let i=0;i<4;i++) setTimeout(() => {
-        const ring = svgEl('circle',{cx,cy,r:'54',fill:'none',stroke:'#ff4444','stroke-width':'3',opacity:'0.85'});
-        svg.appendChild(ring); let r=54,op=0.85;
-        const tick = setInterval(() => { r+=5.5; op-=0.042; ring.setAttribute('r',r); ring.setAttribute('opacity',Math.max(0,op)); if(op<=0){clearInterval(tick);if(ring.parentNode)ring.parentNode.removeChild(ring);} }, 24);
-      }, i*220);
+    // ── Right: Attitude waveform ──
+    const x0=midX+14, x1=W-14, wy=H/2;
+    const wCol = heraldOn ? C.green : (power>55 ? C.red : C.orange);
+    const harmonics = heraldOn ? 1 : Math.min(1+power/32,3.5);
+
+    // Waveform glow (chaos)
+    if (heraldAmp > 18) {
+      ctx.beginPath();
+      for (let x=x0;x<=x1;x+=2) {
+        const t=(x-x0)/(x1-x0);
+        const y=wy+heraldAmp*Math.sin(heraldPhase*2+t*5.5*Math.PI)
+               +(harmonics>1?heraldAmp*0.3*Math.sin(heraldPhase*5+t*11*Math.PI):0);
+        x===x0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      const glowCol = heraldOn?'rgba(23,185,120,0.12)':(power>55?'rgba(255,68,68,0.14)':'rgba(232,164,74,0.12)');
+      ctx.strokeStyle=glowCol; ctx.lineWidth=12; ctx.stroke();
     }
 
-    const dur = 3400/spd;
-    let yr=0;
-    gammaYearInterval = setInterval(() => {
-      yr = Math.min(yr+1, 50);
-      if (yearsEl) yearsEl.textContent = yr;
-      if (statusEl) {
-        if      (yr >= 50) { statusEl.textContent='\u25cf FAILURE';   statusEl.className='mission-badge badge-failure';   clearInterval(gammaYearInterval); gammaYearInterval=null; }
-        else if (yr >= 25) { statusEl.textContent='\u25cf DEGRADING'; statusEl.className='mission-badge badge-degrading'; }
-      }
-    }, dur/50);
+    // Main waveform
+    ctx.beginPath();
+    for (let x=x0;x<=x1;x++) {
+      const t=(x-x0)/(x1-x0);
+      const y = heraldAmp < 1.5 ? wy
+        : wy + heraldAmp*Math.sin(heraldPhase*2+t*5.5*Math.PI)
+             + (harmonics>1 ? heraldAmp*0.28*Math.sin(heraldPhase*5+t*11*Math.PI) : 0)
+             + (harmonics>2.5 ? heraldAmp*0.14*Math.sin(heraldPhase*9+t*17*Math.PI) : 0);
+      x===x0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle=wCol; ctx.lineWidth=heraldAmp>35?3:2; ctx.stroke();
 
-    gammaTimers.push(
-      setTimeout(()=>lines.forEach(l=>{ l.style.transition='opacity 1s'; l.setAttribute('opacity','0.8'); }), 450/spd),
-      setTimeout(()=>{
-        svg.querySelectorAll('g[style="cursor:pointer"]').forEach((g,i) => {
-          const m=mechs[i]; const dx=(cx-m.x)*0.7, dy=(cy-m.y)*0.7;
-          g.style.transition='transform '+(1700/spd)+'ms cubic-bezier(0.4,0,0.2,1)';
-          g.style.transform='translate('+dx+'px,'+dy+'px)';
-        });
-      }, 1500/spd),
-      setTimeout(()=>{ failG.style.transition='opacity 0.9s'; failG.setAttribute('opacity','1'); shockwave(); }, 3200/spd)
-    );
+    // Status labels
+    if (heraldAmp < 3 && heraldOn) {
+      ctx.fillStyle=C.green; ctx.font='9px Space Grotesk,sans-serif'; ctx.textAlign='center';
+      ctx.fillText('STABLE \u2014 HERALD ACTIVE', x0+(x1-x0)/2, wy-20);
+    }
+    if (!heraldOn && power>55) {
+      ctx.fillStyle=C.red; ctx.font='9px Space Grotesk,sans-serif'; ctx.textAlign='center';
+      ctx.fillText('\u26a0  ATTITUDE FAILURE IMMINENT', x0+(x1-x0)/2, wy-22);
+    }
+
+    // Power bar (right edge)
+    const PH=H-40, barH=(power/100)*PH*0.55;
+    ctx.fillStyle=heraldOn?'rgba(23,185,120,0.18)':(power>55?'rgba(255,68,68,0.18)':'rgba(232,164,74,0.14)');
+    ctx.fillRect(W-9, wy-barH/2, 4, barH);
   }
 
-  // Speed label sync
-  const speedEl = document.getElementById('gamma-speed');
-  const speedLbls = ['0.5\u00d7','1\u00d7','1.5\u00d7','2.5\u00d7','4\u00d7'];
-  if (speedEl) {
-    const lblEl = document.getElementById('gamma-speed-label');
-    speedEl.addEventListener('input', () => { if(lblEl) lblEl.textContent=speedLbls[+speedEl.value-1]; initGamma(); });
+  // ════════════════════════════════
+  //  Main animation loop
+  // ════════════════════════════════
+  function loop(ts) {
+    // Advance AXIOM N
+    const spd = +(document.getElementById('axiom-speed')?.value || 3);
+    if (!axiomLastTs) axiomLastTs = ts;
+    const dt = Math.min(ts-axiomLastTs, 100); axiomLastTs = ts;
+    axiomN += spd * dt * 0.003;
+    if (axiomN >= 120) {
+      axiomN = 120;
+      if (!axiomResetAt) axiomResetAt = ts;
+      if (ts - axiomResetAt > 1500) { axiomN=1; axiomResetAt=null; }
+    } else { axiomResetAt=null; }
+
+    drawGamma(ts);
+    drawAxiomPane('axiom-without', false, Math.round(axiomN));
+    drawAxiomPane('axiom-with',    true,  Math.round(axiomN));
+    drawHerald();
+
+    rafId = requestAnimationFrame(loop);
   }
 
-  // ─────────────────────────────────────────
-  // AXIOM Entropy Floor
-  // ─────────────────────────────────────────
-  function initAxiom() {
-    const canvas  = document.getElementById('axiom-canvas');
-    const slider  = document.getElementById('axiom-slider');
-    const countEl = document.getElementById('axiom-count');
-    const flLbl   = document.getElementById('axiom-floor-label');
-    const badge   = document.getElementById('axiom-badge');
-    const btnWith = document.getElementById('axiom-btn-with');
-    const btnNo   = document.getElementById('axiom-btn-without');
-    if (!canvas||!slider) return;
-
-    const ctx = canvas.getContext('2d');
-    const W=canvas.width, H=canvas.height, mu=W/2, BASE=145, FLOOR=26;
-
-    function sigma(n,withAxiom){ return withAxiom ? Math.max(BASE/Math.sqrt(n),FLOOR) : BASE/Math.sqrt(n); }
-    function g(x,s){ return Math.exp(-0.5*((x-mu)/s)**2)/(s*Math.sqrt(2*Math.PI)); }
-
-    function draw(n) {
-      ctx.clearRect(0,0,W,H);
-      const withA = axiomWithMode;
-      const s  = sigma(n,withA);
-      const sNF= BASE/Math.sqrt(n);
-      const atFloor = withA && s <= FLOOR+0.5;
-      const peak = g(mu, Math.max(s,5));
-      const sy   = (H-72)/peak;
-
-      // Grid
-      ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
-      for (let y=H-26;y>20;y-=50){ctx.beginPath();ctx.moveTo(55,y);ctx.lineTo(W-20,y);ctx.stroke();}
-
-      // Ghost no-floor curve
-      if (withA && sNF < FLOOR*2.8) {
-        ctx.save(); ctx.setLineDash([5,5]); ctx.strokeStyle='rgba(232,100,50,0.55)'; ctx.lineWidth=1.8;
-        ctx.beginPath();
-        for(let x=55;x<=W-20;x++){const y=H-26-g(x,sNF)*sy; x===55?ctx.moveTo(x,y):ctx.lineTo(x,y);}
-        ctx.stroke(); ctx.restore();
-        ctx.fillStyle='rgba(240,110,60,0.7)'; ctx.font='10px Inter,sans-serif'; ctx.textAlign='center';
-        ctx.fillText('Without AXIOM \u2014 dangerous certainty', mu+80, Math.max(H-26-g(mu,sNF)*sy-12,14));
-        ctx.textAlign='left';
-      }
-
-      // Danger shading (no-AXIOM mode, high n)
-      if (!withA && n>30) { ctx.fillStyle='rgba(255,50,50,0.05)'; ctx.fillRect(mu-80,0,160,H-26); }
-
-      // Floor line
-      if (withA) {
-        const fy = H-26-g(mu,FLOOR)*sy;
-        if (atFloor) { ctx.strokeStyle='rgba(74,144,232,0.14)'; ctx.lineWidth=10; ctx.beginPath(); ctx.moveTo(55,fy); ctx.lineTo(W-20,fy); ctx.stroke(); }
-        ctx.setLineDash([6,4]); ctx.strokeStyle=atFloor?'rgba(90,168,255,0.9)':'rgba(74,144,232,0.38)'; ctx.lineWidth=atFloor?2.2:1.5;
-        ctx.beginPath(); ctx.moveTo(55,fy); ctx.lineTo(W-20,fy); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle=atFloor?'rgba(90,168,255,0.9)':'rgba(74,144,232,0.55)'; ctx.font='10.5px Inter,sans-serif'; ctx.textAlign='right';
-        ctx.fillText('entropy floor',W-22,fy-8);
-        if (atFloor){ ctx.fillStyle='rgba(74,210,200,0.75)'; ctx.font='10px Inter,sans-serif'; ctx.fillText('With AXIOM \u2014 enforced humility',W-22,fy+17); }
-        ctx.textAlign='left';
-      }
-
-      // Fill
-      const gr = ctx.createLinearGradient(0,0,0,H);
-      const col = withA ? (atFloor?'rgba(74,144,232,0.48)':'rgba(74,144,232,0.2)') : 'rgba(255,68,68,0.22)';
-      gr.addColorStop(0,col); gr.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.beginPath(); ctx.moveTo(55,H-26);
-      for(let x=55;x<=W-20;x++) ctx.lineTo(x,H-26-g(x,s)*sy);
-      ctx.lineTo(W-20,H-26); ctx.closePath(); ctx.fillStyle=gr; ctx.fill();
-
-      // Glow on floor
-      if (atFloor) {
-        ctx.beginPath(); for(let x=55;x<=W-20;x++){const y=H-26-g(x,s)*sy;x===55?ctx.moveTo(x,y):ctx.lineTo(x,y);}
-        ctx.strokeStyle='rgba(74,144,232,0.22)'; ctx.lineWidth=11; ctx.stroke();
-      }
-
-      // Curve
-      ctx.beginPath(); for(let x=55;x<=W-20;x++){const y=H-26-g(x,s)*sy;x===55?ctx.moveTo(x,y):ctx.lineTo(x,y);}
-      ctx.strokeStyle = withA ? (atFloor?'#5aadff':'rgba(74,144,232,0.9)') : (n>80?'rgba(255,60,40,0.95)':'rgba(255,140,80,0.9)');
-      ctx.lineWidth = atFloor?3:2.5; ctx.stroke();
-
-      // Axes
-      ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(55,12); ctx.lineTo(55,H-26); ctx.lineTo(W-20,H-26); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.22)'; ctx.font='10px Inter,sans-serif';
-      ctx.fillText('P(\u03b8 | data)',58,24); ctx.textAlign='center';
-      ctx.fillText('\u03b8  (parameter value)',W/2,H-7); ctx.textAlign='left';
-
-      if (flLbl) flLbl.style.opacity = atFloor?'1':'0';
-
-      if (badge) {
-        if (!withA && n>80) {
-          badge.textContent='\u26a0 OVERCONFIDENT \u2014 MISSION CRITICAL';
-          badge.className='scenario-badge badge-danger'; badge.style.display='inline-block';
-        } else if (atFloor) {
-          badge.textContent='\u2713 EPISTEMICALLY SAFE';
-          badge.className='scenario-badge badge-safe'; badge.style.display='inline-block';
-        } else {
-          badge.style.display='none';
-        }
-      }
-    }
-
-    function autoPlay(withA) {
-      if (axiomAutoTimer) clearInterval(axiomAutoTimer);
-      axiomWithMode = withA; slider.value=1; countEl.textContent=1; draw(1); let n=1;
-      axiomAutoTimer = setInterval(()=>{ n=Math.min(n+2,120); slider.value=n; countEl.textContent=n; draw(n); if(n>=120){clearInterval(axiomAutoTimer);axiomAutoTimer=null;} },55);
-    }
-
-    slider.addEventListener('input', ()=>{ const n=+slider.value; countEl.textContent=n; draw(n); });
-
-    if (btnWith) btnWith.addEventListener('click', ()=>{
-      btnWith.className='scenario-btn active-yes'; if(btnNo) btnNo.className='scenario-btn';
-      autoPlay(true);
-    });
-    if (btnNo) btnNo.addEventListener('click', ()=>{
-      btnNo.className='scenario-btn active-no'; if(btnWith) btnWith.className='scenario-btn';
-      autoPlay(false);
-    });
-
-    autoPlay(true);
+  // ── Boot ──
+  function boot() {
+    resizeAll();
+    setupGamma();
+    setupAxiom();
+    setupHerald();
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
   }
 
-  // ─────────────────────────────────────────
-  // HERALD
-  // ─────────────────────────────────────────
-  function initHerald() {
-    if (heraldRaf) { cancelAnimationFrame(heraldRaf); heraldRaf=null; }
-    const svg      = document.getElementById('herald-svg');
-    const powerSl  = document.getElementById('herald-power');
-    const powerLbl = document.getElementById('herald-power-label');
-    const togBtn   = document.getElementById('herald-toggle');
-    const warnEl   = document.getElementById('herald-warning');
-    if (!svg) return;
-    svg.innerHTML='';
-    const W=700,H=340,mx=W/2;
-
-    // Reset toggle state UI (keep heraldOn from module state)
-    if (togBtn) { togBtn.textContent=heraldOn?'HERALD ON':'HERALD OFF'; togBtn.className=heraldOn?'herald-toggle-btn herald-on':'herald-toggle-btn herald-off'; }
-
-    const defs=svgEl('defs',{});
-    ['hg0','hg1','hg2','hgf'].forEach(id=>{
-      const f=svgEl('filter',{id,x:'-70%',y:'-70%',width:'240%',height:'240%'});
-      f.appendChild(svgEl('feGaussianBlur',{stdDeviation:id==='hgf'?'3':'8',result:'b'}));
-      const fm=svgEl('feMerge',{}); fm.appendChild(svgEl('feMergeNode',{in:'b'})); fm.appendChild(svgEl('feMergeNode',{in:'SourceGraphic'}));
-      f.appendChild(fm); defs.appendChild(f);
-    });
-    svg.appendChild(defs);
-
-    svg.appendChild(svgEl('line',{x1:mx,y1:20,x2:mx,y2:H-20,stroke:'rgba(255,255,255,0.07)','stroke-width':'1','stroke-dasharray':'4 4'}));
-    [['COMPUTE CLUSTER',mx/2,'#4a90e8aa'],['ATTITUDE CONTROL',mx+mx/2,'#e8a44aaa']].forEach(([t,x,f])=>{
-      const el=svgEl('text',{x,y:22,'text-anchor':'middle',fill:f,'font-size':'10.5','font-family':'Inter,sans-serif','font-weight':'600','letter-spacing':'0.1em'});
-      el.textContent=t; svg.appendChild(el);
-    });
-
-    // Magnetic field lines group
-    const fieldG = svgEl('g',{id:'fieldG'});
-    svg.appendChild(fieldG);
-
-    const nodePts=[{x:78,y:88},{x:155,y:115},{x:78,y:150},{x:158,y:182},{x:90,y:220},{x:162,y:252}];
-    const nodes = nodePts.map(({x,y})=>{
-      const ring=svgEl('circle',{cx:x,cy:y,r:'22',fill:'none',stroke:'#4a90e8','stroke-width':'1',opacity:'0'});
-      const circ=svgEl('circle',{cx:x,cy:y,r:'14',fill:'#4a90e818',stroke:'#4a90e8','stroke-width':'2',filter:'url(#hg0)',opacity:'0.4'});
-      svg.appendChild(ring); svg.appendChild(circ); return {ring,circ,x,y};
-    });
-
-    const arrG=svgEl('g',{opacity:'0.8'});
-    const arrLine=svgEl('line',{x1:mx-12,y1:H/2,x2:mx+14,y2:H/2,stroke:'#ff4444','stroke-width':'2.5'});
-    const arrPoly=svgEl('polygon',{points:`${mx+14},${H/2-7} ${mx+28},${H/2} ${mx+14},${H/2+7}`,fill:'#ff4444'});
-    const cLbl=svgEl('text',{x:mx,y:H/2-18,'text-anchor':'middle',fill:'#ff444499','font-size':'10','font-family':'Inter,sans-serif'});
-    cLbl.textContent='structural coupling';
-    arrG.appendChild(arrLine); arrG.appendChild(arrPoly); arrG.appendChild(cLbl); svg.appendChild(arrG);
-
-    const badgeG=svgEl('g',{opacity:'0'});
-    badgeG.appendChild(svgEl('rect',{x:mx-46,y:H/2+34,width:'92',height:'28',rx:'5',fill:'#17b97820',stroke:'#17b978','stroke-width':'2',filter:'url(#hg2)'}));
-    const bt=svgEl('text',{x:mx,y:H/2+52,'text-anchor':'middle',fill:'#17b978','font-size':'14','font-family':'Space Grotesk,sans-serif','font-weight':'700'});
-    bt.textContent='HERALD'; badgeG.appendChild(bt); svg.appendChild(badgeG);
-
-    const nomG=svgEl('g',{opacity:'0'});
-    const nomT=svgEl('text',{x:mx+mx/2,y:H-26,'text-anchor':'middle',fill:'#17b978','font-size':'12','font-family':'Space Grotesk,sans-serif','font-weight':'700','letter-spacing':'0.14em'});
-    nomT.textContent='\u2713 NOMINAL'; nomG.appendChild(nomT); svg.appendChild(nomG);
-
-    const wave=svgEl('path',{stroke:'#e8a44a','stroke-width':'2.5',fill:'none','stroke-linecap':'round'});
-    svg.appendChild(wave);
-
-    // Wire up controls (only add listeners once via data flag)
-    if (togBtn && !togBtn.dataset.wired) {
-      togBtn.dataset.wired='1';
-      togBtn.addEventListener('click', ()=>{
-        heraldOn=!heraldOn;
-        togBtn.textContent=heraldOn?'HERALD ON':'HERALD OFF';
-        togBtn.className=heraldOn?'herald-toggle-btn herald-on':'herald-toggle-btn herald-off';
-      });
-    }
-    if (powerSl && !powerSl.dataset.wired) {
-      powerSl.dataset.wired='1';
-      powerSl.addEventListener('input', ()=>{ if(powerLbl) powerLbl.textContent=powerSl.value+' MW'; });
-    }
-
-    function greenShockwave() {
-      for(let i=0;i<4;i++) setTimeout(()=>{
-        const r=svgEl('circle',{cx:mx,cy:H/2,r:'22',fill:'none',stroke:'#17b978','stroke-width':'3',opacity:'0.9'});
-        svg.appendChild(r); let rv=22,op=0.9;
-        const t=setInterval(()=>{ rv+=5.5;op-=0.042;r.setAttribute('r',rv);r.setAttribute('opacity',Math.max(0,op));if(op<=0){clearInterval(t);if(r.parentNode)r.parentNode.removeChild(r);} },26);
-      },i*210);
-    }
-
-    let amp=0, phase=0, pulse=0, lastOn=true, swFired=false;
-
-    function frame() {
-      phase+=0.048; pulse+=0.1;
-      const pwr  = powerSl ? +powerSl.value : 20;
-      const isOn = heraldOn;
-      const tgt  = isOn ? 0 : pwr * 0.75;
-      amp += (tgt - amp) * 0.04;
-
-      // Magnetic field lines
-      fieldG.innerHTML='';
-      const fOp = Math.min(pwr/70,1) * (isOn?0.25:0.65);
-      nodePts.forEach(({x,y},ni)=>{
-        const cpx=x+(mx-x)*0.4+Math.sin(pulse*0.5+ni)*14;
-        const cpy=y+(H/2-y)*0.18;
-        const endY=H/2+(ni-2.5)*18;
-        const lineOp=(fOp*(0.38+0.62*Math.max(0,Math.sin(pulse+ni*0.7)))).toFixed(2);
-        fieldG.appendChild(svgEl('path',{d:`M ${x} ${y} Q ${cpx} ${cpy} ${mx-14} ${endY}`,stroke:'#4a90e8','stroke-width':'1',fill:'none',opacity:lineOp,filter:'url(#hgf)'}));
-      });
-
-      nodes.forEach(({ring,circ},i)=>{
-        const v=0.28+0.72*Math.max(0,Math.sin(pulse+i*0.62)); circ.setAttribute('opacity',v);
-        const rv=Math.max(0,Math.sin(pulse*0.65+i*0.5)); ring.setAttribute('opacity',rv*0.4); ring.setAttribute('r',20+rv*14);
-      });
-
-      arrG.setAttribute('opacity',(!isOn||pwr>25)?'0.85':'0.15');
-      arrLine.setAttribute('stroke',isOn?'#17b97855':'#ff4444');
-      arrPoly.setAttribute('fill',isOn?'#17b97855':'#ff4444');
-      cLbl.setAttribute('fill',isOn?'#ffffff18':'#ff444499');
-
-      badgeG.style.transition='opacity 0.4s'; badgeG.setAttribute('opacity',isOn?'1':'0');
-      const flatlined = isOn && amp<2;
-      nomG.style.transition='opacity 0.7s'; nomG.setAttribute('opacity',flatlined?'1':'0');
-
-      if (isOn && !lastOn && !swFired) { swFired=true; greenShockwave(); }
-      if (!isOn) swFired=false;
-      lastOn=isOn;
-
-      if (warnEl) warnEl.style.opacity=(!isOn&&pwr>50)?'1':'0';
-
-      const x0=mx+26,x1=W-18,wy=H/2;
-      let d='M '+x0+' '+wy;
-      for(let x=x0;x<=x1;x+=2){ const t=(x-x0)/(x1-x0); d+=' L '+x+' '+(wy+amp*Math.sin(phase+t*5.5*Math.PI)); }
-      wave.setAttribute('d',d);
-      wave.setAttribute('stroke',isOn?'#17b978':(pwr>55?'#ff5533':'#e8a44a'));
-      wave.setAttribute('stroke-width',amp>40?'3.5':'2.5');
-
-      heraldRaf=requestAnimationFrame(frame);
-    }
-    heraldRaf=requestAnimationFrame(frame);
-  }
-
-  // ─────────────────────────────────────────
-  // Tab switching & boot
-  // ─────────────────────────────────────────
-  const tabs   = document.querySelectorAll('.viz-tab');
-  const panels = document.querySelectorAll('.viz-panel');
-
-  tabs.forEach(tab => tab.addEventListener('click', ()=>{
-    tabs.forEach(t=>t.classList.remove('active'));
-    panels.forEach(p=>p.classList.remove('active'));
-    tab.classList.add('active');
-    const p=document.getElementById('viz-'+tab.dataset.tab);
-    if(p) p.classList.add('active');
-    if (tab.dataset.tab==='gamma')  initGamma();
-    if (tab.dataset.tab==='herald') initHerald();
-    if (tab.dataset.tab==='axiom' && !axiomReady){ initAxiom(); axiomReady=true; }
-  }));
-
-  document.querySelectorAll('.viz-replay').forEach(btn=>btn.addEventListener('click',()=>{
-    if (btn.dataset.target==='gamma')  initGamma();
-    if (btn.dataset.target==='herald') initHerald();
-  }));
-
-  let gammaBooted=false;
-  const vizSec=document.getElementById('visualizer');
-  if (vizSec) new IntersectionObserver(entries=>{
-    if(entries[0].isIntersecting&&!gammaBooted){ gammaBooted=true; initGamma(); }
-  },{threshold:0.12}).observe(vizSec);
+  let booted = false;
+  const vizSec = document.getElementById('visualizer');
+  if (vizSec) {
+    new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !booted) { booted=true; setTimeout(boot, 80); }
+    }, {threshold:0.08}).observe(vizSec);
+  } else { setTimeout(boot, 100); }
 
 })();
 
@@ -504,21 +599,19 @@ document.querySelectorAll('.fade-in').forEach((el, i) => { el.style.transitionDe
 
   document.querySelectorAll('.paper-read-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const p = DATA[btn.dataset.target];
-      if (!p) return;
+      const p = DATA[btn.dataset.target]; if (!p) return;
       content.innerHTML =
         '<div class="pex-header"><span class="paper-num" style="position:static;font-size:1.1rem;color:var(--accent);opacity:0.85">' + p.num + '</span><span class="paper-badge ' + p.badgeClass + '">' + p.badge + '</span></div>' +
         '<h2 class="pex-title">' + p.title + '</h2>' +
         '<p class="pex-summary">' + p.summary + '</p>' +
         '<div class="pex-body">' + p.body + '</div>';
       expanded.classList.add('open');
-      setTimeout(() => expanded.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      setTimeout(()=>expanded.scrollIntoView({behavior:'smooth',block:'start'}),60);
     });
   });
 
-  if (closeBtn) closeBtn.addEventListener('click', () => {
+  if (closeBtn) closeBtn.addEventListener('click',()=>{
     expanded.classList.remove('open');
-    const sec = document.getElementById('papers');
-    if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const sec=document.getElementById('papers'); if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
   });
 })();

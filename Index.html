@@ -96,63 +96,72 @@
 
         <!-- Panel 1: Gamma coupling -->
         <div class="viz-panel card active" id="viz-gamma">
-          <p class="viz-plain">In deep space, three things destroy chips slowly. Alone, each takes 100+ years. Together, they cause failure in under 30. This is why.</p>
-          <div class="viz-header">
-            <h3>Γ_coupling — Failure Cascade</h3>
-            <p>Three failure mechanisms begin independently, then converge into a single synergistic failure point when Γ exceeds threshold.</p>
+          <p class="viz-plain">In deep space, three failure mechanisms degrade chips independently &mdash; until around year 28, when &Gamma;_coupling kicks in and they amplify each other toward total failure.</p>
+          <div class="mc-header">
+            <div><h3>&Gamma;_coupling &mdash; Mission Timeline</h3><p class="mc-sub">Drag the Year slider to scrub through the mission. Watch the curves cascade when coupling begins.</p></div>
+            <div id="gamma-status" class="mc-badge mc-nominal">&bull; NOMINAL</div>
           </div>
-          <div class="viz-controls-bar">
-            <div class="viz-control-group">
-              <label>Speed</label>
-              <input type="range" id="gamma-speed" min="1" max="5" step="1" value="2" />
-              <span id="gamma-speed-label">1×</span>
+          <div class="mc-controls">
+            <div class="mc-ctrl-group">
+              <span class="mc-ctrl-lbl">Mission Year</span>
+              <input type="range" id="gamma-year" min="0" max="100" value="0" class="mc-slider" />
+              <span id="gamma-year-val" class="mc-ctrl-val">0 yr</span>
             </div>
-            <div class="viz-stat"><span class="stat-label">Years elapsed</span><span id="gamma-years" class="stat-value">0</span></div>
-            <div id="gamma-status" class="mission-badge badge-nominal">● NOMINAL</div>
+            <button id="gamma-replay" class="mc-btn">&circlearrowleft; Replay</button>
           </div>
-          <div id="gamma-tooltip" class="node-tooltip"></div>
-          <svg id="gamma-svg" viewBox="0 0 700 420" class="viz-svg" aria-label="Gamma coupling failure cascade"></svg>
-          <button class="viz-replay" data-target="gamma">↺ Replay</button>
+          <canvas id="gamma-canvas" class="mc-canvas"></canvas>
         </div>
 
         <!-- Panel 2: AXIOM entropy floor -->
         <div class="viz-panel card" id="viz-axiom">
-          <p class="viz-plain">AI that runs alone for 100 years gets dangerously overconfident. It thinks it knows things it can't possibly know. AXIOM forces it to stay humble — permanently, in hardware it can't override.</p>
-          <div class="viz-header">
-            <h3>AXIOM — Entropy Floor</h3>
-            <p>Drag to add observations. The Bayesian posterior concentrates — then the entropy floor prevents dangerous over-certainty.</p>
+          <p class="viz-plain">AI that runs alone for 100 years gets dangerously overconfident. AXIOM installs a permanent hardware floor on uncertainty &mdash; the AI physically cannot become more certain than this, no matter how much data it collects.</p>
+          <div class="mc-header">
+            <div><h3>AXIOM &mdash; Live Posterior</h3><p class="mc-sub">Both panels update simultaneously as observations accumulate. Watch what diverges at high&nbsp;n.</p></div>
           </div>
-          <div class="scenario-btns">
-            <button class="scenario-btn active-yes" id="axiom-btn-with">WITH AXIOM</button>
-            <button class="scenario-btn" id="axiom-btn-without">WITHOUT AXIOM</button>
+          <div class="mc-controls">
+            <div class="mc-ctrl-group">
+              <span class="mc-ctrl-lbl">Speed</span>
+              <input type="range" id="axiom-speed" min="1" max="8" value="3" class="mc-slider" />
+            </div>
+            <button id="axiom-reset" class="mc-btn">&circlearrowleft; Reset</button>
           </div>
-          <canvas id="axiom-canvas" width="700" height="300" class="viz-canvas"></canvas>
-          <div class="axiom-controls">
-            <label>Observations: <strong id="axiom-count">1</strong></label>
-            <input type="range" id="axiom-slider" min="1" max="120" value="1" />
-            <span id="axiom-floor-label" class="axiom-floor-label">⎯ Entropy floor active</span>
+          <div class="axiom-dual">
+            <div class="axiom-pane">
+              <div class="axiom-pane-hdr danger-hdr">WITHOUT AXIOM</div>
+              <canvas id="axiom-without" class="mc-canvas-half"></canvas>
+              <div class="axiom-pane-ftr">
+                <span id="axiom-status-no" class="mc-badge mc-nominal">&bull; NOMINAL</span>
+                <span class="entropy-lbl">H&nbsp;=&nbsp;<strong id="entropy-no">8.60</strong>&nbsp;bits</span>
+              </div>
+            </div>
+            <div class="axiom-divider"></div>
+            <div class="axiom-pane">
+              <div class="axiom-pane-hdr safe-hdr">WITH AXIOM</div>
+              <canvas id="axiom-with" class="mc-canvas-half"></canvas>
+              <div class="axiom-pane-ftr">
+                <span id="axiom-status-yes" class="mc-badge mc-nominal">&bull; NOMINAL</span>
+                <span class="entropy-lbl">H&nbsp;=&nbsp;<strong id="entropy-yes">8.60</strong>&nbsp;bits</span>
+              </div>
+            </div>
           </div>
-          <div><span id="axiom-badge" class="scenario-badge" style="display:none"></span></div>
         </div>
 
         <!-- Panel 3: HERALD -->
         <div class="viz-panel card" id="viz-herald">
-          <p class="viz-plain">A computer cluster drawing 40 megawatts doesn't just compute — it creates magnetic fields strong enough to knock a spacecraft off course. HERALD makes them talk to each other.</p>
-          <div class="viz-header">
-            <h3>HERALD — Compute–Attitude Coupling</h3>
-            <p>Compute cluster firing induces attitude wobble via structural coupling. HERALD detects and suppresses it in real time.</p>
+          <p class="viz-plain">A 40MW compute cluster generates magnetic fields strong enough to physically rotate a spacecraft. HERALD detects this and reshapes the workload in real time to cancel the torque before it accumulates.</p>
+          <div class="mc-header">
+            <div><h3>HERALD &mdash; Power vs Stability</h3><p class="mc-sub">Increase compute power and watch the attitude waveform destabilize. Toggle HERALD to see the difference.</p></div>
+            <div id="herald-status" class="mc-badge mc-nominal">&bull; NOMINAL</div>
           </div>
-          <div class="viz-controls-bar">
-            <div class="viz-control-group">
-              <label>Power Level</label>
-              <input type="range" id="herald-power" min="1" max="100" value="20" />
-              <span id="herald-power-label">20 MW</span>
+          <div class="mc-controls">
+            <div class="mc-ctrl-group">
+              <span class="mc-ctrl-lbl">Compute Power</span>
+              <input type="range" id="herald-power" min="1" max="100" value="15" class="mc-slider" />
+              <span id="herald-power-val" class="mc-ctrl-val">15 MW</span>
             </div>
-            <button id="herald-toggle" class="herald-toggle-btn herald-on">HERALD ON</button>
-            <div id="herald-warning" class="herald-warning" style="opacity:0">⚠ ATTITUDE FAILURE IMMINENT</div>
+            <button id="herald-toggle" class="mc-btn mc-btn-green">HERALD ON</button>
           </div>
-          <svg id="herald-svg" viewBox="0 0 700 340" class="viz-svg" aria-label="HERALD coupling isolation"></svg>
-          <button class="viz-replay" data-target="herald">↺ Replay</button>
+          <canvas id="herald-canvas" class="mc-canvas"></canvas>
         </div>
 
       </div>
