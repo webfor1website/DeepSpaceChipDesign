@@ -691,18 +691,15 @@ h1, h2, h3, h4 {
 
 /* Hero Summary Overlay */
 .hero-summary-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  margin-top: 3rem;
   z-index: 15;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 @keyframes fadeInUp {
