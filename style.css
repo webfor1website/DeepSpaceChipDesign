@@ -688,3 +688,148 @@ h1, h2, h3, h4 {
   .mc-canvas-half  { height:180px; }
   .mc-canvas       { height:240px; }
 }
+
+/* Hero Summary Overlay */
+.hero-summary-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  z-index: 15;
+  pointer-events: none;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.summary-card.fade-in {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.summary-headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  margin-bottom: 0.8rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+}
+
+.summary-subheadline {
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  max-width: 800px;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  max-width: 1200px;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.summary-card {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  padding: 1.2rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.summary-card:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-4px);
+}
+
+.summary-card-num {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #1d6fe8;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.2rem;
+}
+
+.summary-card-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.3;
+}
+
+.summary-card-desc {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-summary-overlay {
+    padding: 1rem;
+  }
+  
+  .summary-headline {
+    font-size: 1.2rem;
+    margin-bottom: 0.6rem;
+  }
+  
+  .summary-subheadline {
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+  
+  .summary-card {
+    padding: 1rem;
+  }
+  
+  .summary-card-title {
+    font-size: 0.9rem;
+  }
+  
+  .summary-card-desc {
+    font-size: 0.78rem;
+  }
+}
