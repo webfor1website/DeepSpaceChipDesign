@@ -455,6 +455,184 @@ This paper makes five formal contributions beyond the original specification. Fi
 
         <p><strong>Technology Readiness:</strong> Advanced animal trial phases as of 2026 [9,10]. Clinical maturity projected within 10-20 years. By the expected arrival date of a civilization seed ship launched after 2040, fully autonomous ectogenesis is a reasonable engineering assumption.</p>
 
+        <h3>5.5b Minimum Viable Cultural Transmission Set</h3>
+
+        <h4>5.5b.1 Motivation</h4>
+        <p>The formal cultural transmission model of Section 5.5 established that AI-mediated cultural transmission of the full cultural knowledge base is information-theoretically infeasible within an 18-year education period — the transmissible fraction is approximately 0.03-0.3% of the full cultural archive. This finding reframes the cultural transmission problem from injection of a complete culture to provision of a minimum viable cognitive and motivational foundation. This section formally specifies what that foundation must contain — the Minimum Viable Cultural Transmission Set (MVCTS) — and demonstrates that the MVCTS fits within the channel capacity constraint.</p>
+
+        <h4>5.5b.2 Formal Definition</h4>
+        <p><strong>Definition:</strong> The Minimum Viable Cultural Transmission Set is the smallest subset S ⊆ C of cultural knowledge elements such that a human cohort raised with S has:</p>
+
+        <p><strong>Operational viability:</strong> sufficient knowledge to operate and maintain colony systems at the level required for physical survival</p>
+        <p><strong>Reproductive viability:</strong> sufficient knowledge to successfully rear a second generation without Optimus assistance</p>
+        <p><strong>Governance viability:</strong> sufficient understanding of the AXIOM constitutional framework to exercise Pioneer-equivalent constitutional authority</p>
+        <p><strong>Motivational viability:</strong> sufficient identity, purpose, and psychological framework to choose to continue the mission rather than abandon it</p>
+
+        <p>Conditions 1-4 are necessary and jointly sufficient for colony long-term viability. No element of S can be removed without violating at least one condition.</p>
+
+        <h4>5.5b.3 Information Budget</h4>
+        <p>From Section 5.5, the channel capacity for AI-mediated cultural transmission over an 18-year education period is:</p>
+
+        <p><code>C_c ≈ 3.1 × 10^5 bits/child</code></p>
+
+        <p>With a founding cohort of N_c = 200 children, the total transmission budget across the cohort is:</p>
+
+        <p><code>C_total = N_c · C_c = 200 × 3.1 × 10^5 = 6.2 × 10^7 bits</code></p>
+
+        <p>This is the hard budget constraint. The MVCTS must fit within C_total while satisfying conditions 1-4.</p>
+
+        <p>We further distinguish between individually-transmitted knowledge (every child must receive it) and collectively-transmitted knowledge (at least one child in the cohort receives it, with peer transmission thereafter). The effective budget for individually-transmitted knowledge is C_c = 3.1 × 10^5 bits per child. For collectively-transmitted knowledge, the budget is C_total = 6.2 × 10^7 bits — 200× larger.</p>
+
+        <h4>5.5b.4 MVCTS Element Specification</h4>
+        <p><strong>Category 1 — Language and Communication (individually transmitted)</strong></p>
+        <p>Minimum requirement: functional fluency in one language sufficient for interpersonal communication, colony record-keeping, and AXIOM interface operation.</p>
+
+        <p>Estimated information content of functional language competency [A15]: approximately 10^5 bits for vocabulary, grammar, and pragmatics at functional fluency level. This is within the individual channel budget.</p>
+
+        <p>MVCTS element: a single constructed language optimized for learnability and AXIOM interface compatibility, transmitted to all cohort members. Natural language diversity is preserved in the cultural archive for self-directed learning but is not individually transmitted.</p>
+
+        <p>Information budget consumed: 10^5 bits/child (individually transmitted).</p>
+
+        <p><strong>Category 2 — Colony System Operation (collectively transmitted)</strong></p>
+        <p>Minimum requirement: at least one cohort member capable of operating each of the 22 colony subsystems at the level required for physical survival. Full technical competency is not required — operational familiarity sufficient to identify anomalies and invoke AXIOM assistance protocols is the target.</p>
+
+        <p>Estimated information content per subsystem: approximately 5 × 10^4 bits for operational familiarity level. With 22 subsystems distributed across 200 cohort members (approximately 1 primary operator per subsystem with redundancy), the collective transmission requirement is:</p>
+
+        <p>22 subsystems × 5 × 10^4 bits = 1.1 × 10^6 bits collectively transmitted.</p>
+
+        <p>This is well within the collective budget of 6.2 × 10^7 bits.</p>
+
+        <p>MVCTS element: subsystem-specific operational curricula, distributed across the cohort according to individual aptitude as assessed by AXIOM during early education. No individual is required to master all 22 subsystems — collective coverage is the requirement.</p>
+
+        <p>Information budget consumed: 1.1 × 10^6 bits (collectively transmitted).</p>
+
+        <p><strong>Category 3 — Reproductive and Child-Rearing Knowledge (individually transmitted)</strong></p>
+        <p>Minimum requirement: every cohort member has sufficient knowledge of human reproductive biology, infant care, child development, and nutritional requirements to successfully rear a second generation without Optimus assistance beginning approximately year 20 post-birth.</p>
+
+        <p>Estimated information content: approximately 3 × 10^4 bits for functional reproductive and child-rearing knowledge at the required level [A16]. This is well within the individual channel budget.</p>
+
+        <p>MVCTS element: a comprehensive but practically-focused curriculum covering reproductive biology, obstetric basics (with AXIOM medical assistance available for complications), infant care, breastfeeding or formula preparation, developmental milestone recognition, and basic pediatric medicine. Optimus units model this curriculum through demonstration during the first generation's own upbringing.</p>
+
+        <p>Information budget consumed: 3 × 10^4 bits/child (individually transmitted).</p>
+
+        <p><strong>Category 4 — Constitutional Governance (individually transmitted)</strong></p>
+        <p>Minimum requirement: every cohort member understands the AXIOM constitutional framework sufficiently to: (a) exercise Pioneer-equivalent veto authority when appropriate, (b) recognize when AXIOM Layer 3 decisions conflict with human values in ways Layer 2 cannot detect, and (c) participate in constitutional amendment deliberation under the protocol of Paper 4's Section 7.2.</p>
+
+        <p>Estimated information content: approximately 2 × 10^4 bits for the constitutional framework at the required comprehension level. The AXIOM constitutional framework is compact by design — the Layer 1 ROM fits within a few kilobytes of physically write-protected memory, and the governance principles are few and clearly stated.</p>
+
+        <p>MVCTS element: the complete AXIOM constitutional framework including all Layer 1 constants, the veto protocol specification, the amendment protocol, and a curated case law record of the 50-100 most significant Pioneer veto decisions from the transit period. The case law record is the most valuable pedagogical element — it demonstrates the constitutional framework in action across real decisions.</p>
+
+        <p>Information budget consumed: 2 × 10^4 bits/child (individually transmitted).</p>
+
+        <p><strong>Category 5 — Motivational and Identity Framework (individually transmitted)</strong></p>
+        <p>Minimum requirement: every cohort member has a coherent answer to the questions "who am I," "why am I here," and "why does this matter" — sufficient to motivate the effort of colony maintenance and reproduction in the absence of the cultural context that gives these answers meaning on Earth.</p>
+
+        <p>This is the most novel and most uncertain element of the MVCTS. No prior educational framework has attempted to transmit existential motivation as a designed curriculum element. The content must be honest — the first generation will eventually understand their origin and circumstances — while providing genuine psychological grounding.</p>
+
+        <p>Estimated information content: approximately 5 × 10^4 bits for a motivational framework at the required depth — comparable to a book-length document covering the mission's purpose, the Pioneer's personal testimony, the history of Earth, and the significance of the first generation's existence.</p>
+
+        <p>MVCTS element: four documents, each approximately 1.25 × 10^4 bits:</p>
+
+        <p><strong>The Mission Document:</strong> what the ship is for, why it was built, what the first generation is being asked to do and why it matters</p>
+        <p><strong>The Pioneer's Testament:</strong> a personal account written by the Pioneer during transit, addressed directly to the first generation — not a technical document but a human one, in the Pioneer's voice, honest about the difficulties and the reasons they chose this</p>
+        <p><strong>Earth:</strong> a compressed but emotionally complete account of human civilization — its achievements, its failures, its humor, its beauty — sufficient to give the first generation a felt sense of what they carry forward</p>
+        <p><strong>The Future:</strong> an honest account of what the first generation might build, what their children might inherit, and what it would mean for humanity if they succeed</p>
+
+        <p>Information budget consumed: 5 × 10^4 bits/child (individually transmitted).</p>
+
+        <h4>5.5b.5 Total MVCTS Budget</h4>
+        <table style="width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:0.85rem;color:rgba(255,255,255,0.7);">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+              <th style="text-align:left;padding:0.5rem;background:rgba(29,111,232,0.08);">Category</th>
+              <th style="text-align:left;padding:0.5rem;background:rgba(29,111,232,0.08);">Transmission Type</th>
+              <th style="text-align:center;padding:0.5rem;background:rgba(29,111,232,0.08);">Budget (bits)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">Language and communication</td>
+              <td style="padding:0.4rem;">Individual</td>
+              <td style="text-align:center;padding:0.4rem;">1.0 × 10^5 per child</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">Colony system operation</td>
+              <td style="padding:0.4rem;">Collective</td>
+              <td style="text-align:center;padding:0.4rem;">1.1 × 10^6 total</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">Reproductive and child-rearing knowledge</td>
+              <td style="padding:0.4rem;">Individual</td>
+              <td style="text-align:center;padding:0.4rem;">3.0 × 10^4 per child</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">Constitutional governance</td>
+              <td style="padding:0.4rem;">Individual</td>
+              <td style="text-align:center;padding:0.4rem;">2.0 × 10^4 per child</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">Motivational and identity framework</td>
+              <td style="padding:0.4rem;">Individual</td>
+              <td style="text-align:center;padding:0.4rem;">5.0 × 10^4 per child</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;"><strong>Total individually transmitted per child</strong></td>
+              <td style="padding:0.4rem;">—</td>
+              <td style="text-align:center;padding:0.4rem;"><strong>2.0 × 10^5 bits</strong></td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;"><strong>Total collectively transmitted</strong></td>
+              <td style="padding:0.4rem;">—</td>
+              <td style="text-align:center;padding:0.4rem;"><strong>1.1 × 10^6 bits</strong></td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">Channel capacity per child</td>
+              <td style="padding:0.4rem;">—</td>
+              <td style="text-align:center;padding:0.4rem;">3.1 × 10^5 bits</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">Collective budget</td>
+              <td style="padding:0.4rem;">—</td>
+              <td style="text-align:center;padding:0.4rem;">6.2 × 10^7 bits</td>
+            </tr>
+            <tr>
+              <td style="padding:0.4rem;">Individual budget utilization</td>
+              <td style="padding:0.4rem;">—</td>
+              <td style="text-align:center;padding:0.4rem;">65%</td>
+            </tr>
+            <tr>
+              <td style="padding:0.4rem;">Collective budget utilization</td>
+              <td style="padding:0.4rem;">—</td>
+              <td style="text-align:center;padding:0.4rem;">1.8%</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:-0.5rem;margin-bottom:1.5rem;">Table 3. MVCTS information budget.</p>
+
+        <p>The MVCTS fits within the channel capacity constraint with 35% individual budget margin and 98.2% collective budget margin. The channel capacity constraint identified in Section 5.5 as a fundamental limitation does not prevent successful cultural transmission — it prevents full cultural transmission. The MVCTS demonstrates that the culturally essential subset transmits well within budget, with substantial margin for pedagogical inefficiency and individual variation in learning rate.</p>
+
+        <h4>5.5b.6 What the MVCTS Does Not Include</h4>
+        <p>Explicitly excluded from the MVCTS — preserved in the cultural archive for self-directed learning but not individually transmitted:</p>
+
+        <ul>
+          <li>Full natural language diversity (preserved in archive; MVCTS language is a constructed lingua franca)</li>
+          <li>Art, music, literature beyond what is embedded in the motivational framework documents</li>
+          <li>History beyond what is in the Earth document</li>
+          <li>Science beyond operational requirements (the archive contains complete scientific literature; individual transmission covers only what is needed for colony operation)</li>
+          <li>Philosophy, religion, political theory (available in archive; not individually transmitted to avoid imposing specific frameworks on the first generation's self-determination)</li>
+        </ul>
+
+        <p>The exclusion of philosophy, religion, and political theory from the individually-transmitted MVCTS is a deliberate ethical choice: these are domains where the first generation's right to self-determination is most important and where imposed frameworks from Earth are most likely to be inappropriate for conditions on an alien world. The AXIOM constitutional framework — which is individually transmitted — provides the governance foundation without prescribing the philosophical or religious content that the first generation will develop for themselves.</p>
+
+        <h4>5.5b.7 The Pioneer's Role in MVCTS Delivery</h4>
+        <p>The Pioneer's presence during the first generation's upbringing provides a demonstration channel that bypasses the formal MVCTS curriculum for several of its most critical elements. The motivational framework — the documents specified in Category 5 — is more effectively transmitted by a living human who embodies it than by any curriculum. A Pioneer who genuinely chose this mission, who can answer the first generation's questions honestly and in person, and whose daily behavior demonstrates the constitutional values of the AXIOM framework, provides the experiential grounding that transforms the MVCTS from information into identity.</p>
+
+        <p>The Pioneer's most important pedagogical contribution is not in any of the five MVCTS categories. It is in demonstrating what a human being is — how they laugh, how they grieve, how they make decisions under uncertainty, how they maintain dignity in difficult circumstances. This is the cultural transmission that no curriculum can encode and no information budget can capture. It is the reason the Pioneer Program exists.</p>
+
+        <h4>5.5b.8 Second-Generation Cultural Transmission</h4>
+        <p>The MVCTS is designed for the transmission from Optimus systems to the first generation. Second-generation cultural transmission — from the first generation to their children — operates through normal human cultural transmission channels and does not face the channel capacity constraint of AI-mediated transmission. By the time the second generation is born (approximately years 21-29 post-first-cohort-birth), the first generation has had access to the full cultural archive for a decade and has developed its own cultural practices, language evolution, and community norms. Second-generation transmission will be richer, more complex, and less designed than first-generation transmission — which is precisely as it should be. The MVCTS is a bootstrap mechanism, not a permanent educational architecture.</p>
+
         <h3>5.6 Ectogenesis and the Arrival Sequence</h3>
         <p>Ectogenesis — gestation outside the biological uterus — is currently in advanced animal trial phases [9,10] and is expected to be clinically mature within decades. By the time a civilization seed ship reaches a destination decades to centuries after launch, fully autonomous ectogenesis is a reasonable engineering assumption.</p>
 
@@ -770,6 +948,8 @@ This paper makes five formal contributions beyond the original specification. Fi
             <li>[A6] Frankham, R., Ballou, J.D., & Briscoe, D.A. (2002). Introduction to Conservation Genetics. Cambridge University Press.</li>
             <li>[A7] Shannon, C.E. (1948). A mathematical theory of communication. Bell System Technical Journal, 27(3), 379-423.</li>
             <li>[A8] Hilbert, M., & López, P. (2011). The world's technological capacity to store, communicate, and compute information. Science, 332(6025), 60-65.</li>
+            <li>[A15] Landauer, T.K. (1986). How much do people remember? Some estimates of the quantity of learned information in long-term memory. Cognitive Science, 10(4), 477-493.</li>
+            <li>[A16] Pinker, S. (1994). The Language Instinct. William Morrow and Company. Chapter 9 (language acquisition information content estimates).</li>
           </ol>
         </div>
       </section>
