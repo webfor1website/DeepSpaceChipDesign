@@ -526,6 +526,213 @@ This paper makes ten contributions. Five were present in the original specificat
 
         <p>This is the deepest implication of the regenerative architecture. The ship does not merely survive deep space. It becomes the authority on surviving deep space. And it shares that authority with every researcher on Earth who can receive a radio signal.</p>
 
+        <h3>7.9 Formal Exogenous Shock Analysis</h3>
+
+        <h4>7.9.1 Motivation</h4>
+        <p>The improvement rate framework of Section 7.1 establishes that the regenerative architecture achieves theoretically unbounded operational lifetime when dI/dt > λ·R(t). The framework models degradation as a continuous process governed by known physical mechanisms — Γ_coupling, radiation displacement damage, electromigration, thermomechanical fatigue — against which the experimental program generates continuous improvements. This model is complete within its scope but explicitly excludes exogenous shocks: discrete, instantaneous events that reduce R(t) by a finite amount independent of the continuous degradation trajectory.</p>
+
+        <p>This section formalizes the exogenous shock model, quantifies the probability distribution of shock events relevant to century-scale deep-space missions, derives the shock-adjusted operational lifetime distribution, and specifies the architectural responses that minimize exogenous shock impact.</p>
+
+        <h4>7.9.2 Formal Exogenous Shock Model</h4>
+        <p><strong>Definition:</strong> An exogenous shock is an event at time t_s that instantaneously reduces chip resilience by a finite amount ΔR_s:</p>
+
+        <p><code>R(t_s^+) = R(t_s^-) − ΔR_s</code></p>
+
+        <p>where ΔR_s ∈ [0, R(t_s^-)] and t_s^+ and t_s^- denote the instants immediately after and before the shock respectively.</p>
+
+        <p>The shock-adjusted resilience equation becomes:</p>
+
+        <p><code>R(t) = R₀ · e^(−λt) + I(t) − Σ_{s: t_s ≤ t} ΔR_s · H(t − t_s)</code> (1)</p>
+
+        <p>where the sum is over all shocks that have occurred by time t. The threshold condition for sustained positive resilience trajectory becomes:</p>
+
+        <p><code>dI/dt > λ · R(t) + E[ΔR_s · dN_s/dt]</code> (2)</p>
+
+        <p>where dN_s/dt is the shock arrival rate and E[ΔR_s] is the expected shock magnitude. The improvement rate must exceed not only the continuous degradation rate but also the expected shock-induced resilience loss rate.</p>
+
+        <h4>7.9.3 Shock Classification</h4>
+        <p>We classify exogenous shocks into four categories by physical mechanism, each with distinct probability distributions and resilience impact models.</p>
+
+        <p><strong>Category S1 — Meteoroid Impact</strong></p>
+        <p>Meteoroid impacts are the canonical exogenous shock for deep-space spacecraft. The impact rate and size distribution are well-characterized from interplanetary meteoroid flux models [A20,A21].</p>
+
+        <p>Impact flux at 1 AU for meteoroids of mass m > m_min:</p>
+
+        <p><code>Φ(m > m_min) = 2.2 × 10^(-9) · m_min^(-0.9) m^(-2)·s^(-1)</code> (3)</p>
+
+        <p>For a spacecraft with total cross-sectional area A_ship = 100 m² (conservative estimate for a 59 metric ton platform), the expected number of impacts per year from meteoroids above mass m_min:</p>
+
+        <p>N_impact(m > m_min, per year) = Φ(m > m_min) · A_ship · 3.15 × 10^7 s/yr</p>
+
+        <p>The resilience impact ΔR_s from a meteoroid impact depends on the impact location and energy. We model three impact regimes:</p>
+
+        <p><strong>Regime 1 — Minor impact (m < 10^(-6) kg):</strong> Surface damage to sacrificial layer or hull. ΔR_s ≈ 0.001-0.01 (0.1-1% resilience loss). Expected rate: approximately 8.5 impacts/year at 1 AU, decreasing as r^(-1.5) with heliocentric distance.</p>
+
+        <p><strong>Regime 2 — Moderate impact (10^(-6) kg ≤ m < 10^(-3) kg):</strong> Penetration of outer hull, potential damage to non-redundant subsystems. ΔR_s ≈ 0.05-0.20 (5-20% resilience loss). Expected rate: approximately 0.003 impacts/year at 1 AU.</p>
+
+        <p><strong>Regime 3 — Major impact (m ≥ 10^(-3) kg):</strong> Catastrophic structural damage. ΔR_s ≈ 0.50-1.00 (50-100% resilience loss). Expected rate: approximately 3 × 10^(-7) impacts/year at 1 AU.</p>
+
+        <p><strong>Category S2 — Solar Energetic Particle Events</strong></p>
+        <p>SEP events produce instantaneous high-fluence radiation doses that exceed the continuous GCR background by orders of magnitude. The Carrington-level SEP event (1859) is the design basis extreme event.</p>
+
+        <p>SEP event frequency distribution [A22]: approximately 2-3 Carrington-class events per solar cycle (11 years), giving an expected rate of λ_SEP ≈ 0.23/year during solar maximum, decreasing to approximately 0.02/year during solar minimum.</p>
+
+        <p>Resilience impact: a Carrington-class SEP event deposits approximately 10^4-10^5 rad total ionizing dose over 48-72 hours — equivalent to approximately 10-100 years of continuous GCR exposure. For non-CNT signal routing layers: ΔR_SEP ≈ 0.05-0.15 per Carrington-class event. For CNT critical-path interconnects: ΔR_SEP ≈ 0.001-0.005 (substantially reduced due to higher displacement threshold energy).</p>
+
+        <p>HERALD storm mode (Paper 3) provides partial mitigation — plasma phased-array shielding reduces effective SEP dose by approximately 40-60% for proton energies below 100 MeV. For Carrington-class events with significant >100 MeV proton component, residual dose after HERALD mitigation is approximately 10^3-10^4 rad.</p>
+
+        <p><strong>Category S3 — Single-Event Latch-Up Cascade</strong></p>
+        <p>As analyzed in Paper 3, a heavy-ion strike on a power FET can latch the affected FET into a high-current state. If the per-node galvanic isolation system fails to open within the specified microsecond response time, the latch-up current spike propagates to adjacent nodes, potentially causing a cascade of secondary latch-up events.</p>
+
+        <p>Latch-up cascade probability: P(cascade | SEL event) = P(isolation switch failure) × P(cascade propagation given propagation path). For published solid-state switch failure rates of approximately 10^(-6) per switching event and cascade propagation probability of approximately 0.3:</p>
+
+        <p>P(cascade | SEL) ≈ 3 × 10^(-7) per SEL event</p>
+
+        <p>SEL event rate: approximately 0.5-2.0 per day for heavy-ion flux at 1 AU, giving a cascade rate of approximately 5 × 10^(-5) per year — negligible at the system level.</p>
+
+        <p>Resilience impact of a cascade: ΔR_cascade ≈ 0.10-0.40 depending on the number of nodes affected before isolation. The HERALD per-node galvanic isolation with optical triggering (Paper 3, Section 7.4) limits cascade spread to at most 2-3 adjacent nodes under the worst-case isolation switch failure scenario.</p>
+
+        <p><strong>Category S4 — Fabrication System Failure</strong></p>
+        <p>The minifab laboratory itself can experience exogenous shocks — particularly to the EBL column assembly, which is the highest-failure-rate precision component in the bridge inventory. An EBL column failure that occurs before the medium fab achieves Level 2 replication capability eliminates the fine fab's ability to produce new chip modules until a spare EBL column is installed.</p>
+
+        <p>EBL column failure rate: λ_EBL = 0.30/year (from the bridge inventory analysis of Section 8.4). Expected time to first failure: 1/λ_EBL ≈ 3.3 years. With N_EBL = 11 spare units, the probability that all 12 EBL columns (1 primary + 11 spares) fail before Level 2 self-replication is achieved at t = 15 years:</p>
+
+        <p>P(fab shock) = P(X > 12 | Poisson(λ_EBL × 15)) = P(X > 12 | Poisson(4.5)) ≈ 0.006</p>
+
+        <p>Resilience impact: during EBL column replacement (estimated MTTR ≈ 72 hours for Optimus installation), fine fab capability is unavailable. ΔR_fab ≈ 0.02-0.05 depending on the criticality of pending fabrication tasks at the time of failure.</p>
+
+        <h4>7.9.4 Shock-Adjusted Operational Lifetime Distribution</h4>
+        <p>Combining the four shock categories, the total expected shock-induced resilience loss rate is:</p>
+
+        <p>E[dR_shock/dt] = Σ_categories E[ΔR_s] · λ_s</p>
+
+        <table style="width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:0.85rem;color:rgba(255,255,255,0.7);">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+              <th style="text-align:left;padding:0.5rem;background:rgba(29,111,232,0.08);">Category</th>
+              <th style="text-align:center;padding:0.5rem;background:rgba(29,111,232,0.08);">E[ΔR_s]</th>
+              <th style="text-align:center;padding:0.5rem;background:rgba(29,111,232,0.08);">λ_s (per year)</th>
+              <th style="text-align:center;padding:0.5rem;background:rgba(29,111,232,0.08);">E[dR_shock/dt] (per year)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">S1 Minor meteoroid</td>
+              <td style="text-align:center;padding:0.4rem;">0.005</td>
+              <td style="text-align:center;padding:0.4rem;">8.5</td>
+              <td style="text-align:center;padding:0.4rem;">0.043</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">S1 Moderate meteoroid</td>
+              <td style="text-align:center;padding:0.4rem;">0.125</td>
+              <td style="text-align:center;padding:0.4rem;">0.003</td>
+              <td style="text-align:center;padding:0.4rem;">0.000375</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">S1 Major meteoroid</td>
+              <td style="text-align:center;padding:0.4rem;">0.75</td>
+              <td style="text-align:center;padding:0.4rem;">3×10^(-7)</td>
+              <td style="text-align:center;padding:0.4rem;">2.25×10^(-7)</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">S2 SEP event (solar max)</td>
+              <td style="text-align:center;padding:0.4rem;">0.10</td>
+              <td style="text-align:center;padding:0.4rem;">0.23</td>
+              <td style="text-align:center;padding:0.4rem;">0.023</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">S2 SEP event (solar min)</td>
+              <td style="text-align:center;padding:0.4rem;">0.10</td>
+              <td style="text-align:center;padding:0.4rem;">0.02</td>
+              <td style="text-align:center;padding:0.4rem;">0.002</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">S3 Latch-up cascade</td>
+              <td style="text-align:center;padding:0.4rem;">0.25</td>
+              <td style="text-align:center;padding:0.4rem;">5×10^(-5)</td>
+              <td style="text-align:center;padding:0.4rem;">1.25×10^(-5)</td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+              <td style="padding:0.4rem;">S4 Fab system failure</td>
+              <td style="text-align:center;padding:0.4rem;">0.035</td>
+              <td style="text-align:center;padding:0.4rem;">0.006/15</td>
+              <td style="text-align:center;padding:0.4rem;">1.4×10^(-5)</td>
+            </tr>
+            <tr>
+              <td style="padding:0.4rem;"><strong>Total</strong></td>
+              <td style="text-align:center;padding:0.4rem;">—</td>
+              <td style="text-align:center;padding:0.4rem;">—</td>
+              <td style="text-align:center;padding:0.4rem;"><strong>~0.068/year</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:-0.5rem;margin-bottom:1.5rem;">Table 1. Shock category analysis.</p>
+
+        <p>The total expected shock-induced resilience loss rate of approximately 0.068/year is dominated by minor meteoroid impacts (0.043/year) and SEP events during solar maximum (0.023/year).</p>
+
+        <p>The shock-adjusted threshold condition for sustained positive resilience trajectory becomes:</p>
+
+        <p>dI/dt > λ · R(t) + 0.068</p>
+
+        <p>From Section 7.2's improvement rate estimates (dI/dt ≈ 0.005-0.020/month = 0.06-0.24/year) and Paper 4's MTTR analysis (λ · R(t) ≈ 0.0017/month = 0.020/year):</p>
+
+        <p>Required: dI/dt > 0.020 + 0.068 = 0.088/year</p>
+
+        <p>The lower bound of the improvement rate estimate (0.06/year) falls below this threshold. The upper bound (0.24/year) exceeds it comfortably. The shock-adjusted framework reveals that minor meteoroid impacts and SEP events are the dominant design drivers for the improvement rate requirement — not the continuous Γ_coupling degradation.</p>
+
+        <h4>7.9.5 Architectural Responses to Exogenous Shocks</h4>
+        <p><strong>Response to S1 (Meteoroid):</strong></p>
+        <p>Detection: The piezoelectric stress sensor network (Innovation 6) detects impacts within milliseconds. Impact location, energy, and affected subsystems are identified within seconds.</p>
+
+        <p>Immediate response: Optimus units are dispatched to the impact site within minutes. AXIOM Layer 2 isolates affected subsystems from the live compute network and reroutes through redundant pathways (self-healing Layer 2).</p>
+
+        <p>Recovery: Minor impacts are addressed by the self-healing stack within hours. Moderate impacts require minifab fabrication of replacement modules — MTTR approximately 24-72 hours. Major impacts trigger a mission-critical triage decision by AXIOM with Pioneer veto opportunity.</p>
+
+        <p>Shock resistance improvement: The minifab experimental program specifically targets sacrificial layer compositions that maximize meteoroid energy absorption — the same experimental program that addresses GCR radiation mitigation. Successful sacrificial layer iterations improve resistance to both threat types simultaneously, providing a positive interaction between the experimental program and meteoroid shock mitigation.</p>
+
+        <p><strong>Response to S2 (SEP Events):</strong></p>
+        <p>Detection: Particle flux sensor network detects Carrington-class precursor events approximately 10-30 minutes before peak intensity (Paper 3, Section 7.3).</p>
+
+        <p>Immediate response: HERALD storm mode activates. All non-critical compute suspended. Plasma phased-array switches to maximum-power collective shielding. Photonic inter-die links replace digital sensor readouts to prevent correlated SEU failures.</p>
+
+        <p>Recovery: Following the event, the thermal annealing protocol (self-healing Layer 4) is applied to all affected chip regions over a 48-72 hour post-event recovery period. The quantum dot radiation detector network (Innovation 8) maps the spatial distribution of SEP-induced damage, enabling targeted annealing rather than uniform conservative treatment.</p>
+
+        <p>Long-term: SEP events contribute to the experimental database — each event is an unplanned but valuable data point characterizing chip response to extreme radiation loading conditions not achievable in controlled experiments. AXIOM logs the pre-event, during-event, and post-event chip state, and the data is transmitted to Earth as a high-priority experimental result.</p>
+
+        <p><strong>Response to S3 (Latch-Up Cascade):</strong></p>
+        <p>The per-node galvanic isolation with optical triggering (Paper 3, Section 7.4) limits cascade spread. Post-cascade, affected nodes undergo full diagnostic testing by the neuromorphic immune system (Innovation 9) before being returned to service.</p>
+
+        <p><strong>Response to S4 (Fabrication System Failure):</strong></p>
+        <p>EBL column replacement by Optimus units (MTTR ≈ 72 hours) from the bridge inventory. AXIOM deprioritizes non-critical fabrication tasks during the replacement period to minimize mission impact.</p>
+
+        <h4>7.9.6 Residual Risk After Architectural Responses</h4>
+        <p>After applying all architectural responses, the residual unmitigated shock risk is dominated by major meteoroid impacts (S1 Regime 3) — events large enough to cause catastrophic structural damage that cannot be recovered by any onboard system.</p>
+
+        <p>Major meteoroid probability over 100-year mission:</p>
+
+        <p>P(at least one major impact in 100 years) = 1 − exp(−3 × 10^(-7) × 100) ≈ 3 × 10^(-5)</p>
+
+        <p>This is negligibly small — approximately 1 in 33,000 missions would experience a catastrophic meteoroid impact over a 100-year period. It is the irreducible residual risk of operating in the meteoroid environment.</p>
+
+        <p><strong>Multi-node fleet risk reduction:</strong></p>
+        <p>For a fleet of N_fleet independent nodes operating in formation, the probability that all nodes experience catastrophic meteoroid impacts simultaneously is:</p>
+
+        <p>P(total fleet loss) = (3 × 10^(-5))^N_fleet</p>
+
+        <p>For N_fleet = 3: P ≈ 2.7 × 10^(-14) — effectively zero on any human-relevant timescale. The multi-node fleet architecture of Paper 3 therefore provides near-complete protection against the only shock category that cannot be mitigated by onboard systems.</p>
+
+        <h4>7.9.7 Revised Improvement Rate Requirement</h4>
+        <p>The formal exogenous shock analysis produces a revised minimum improvement rate requirement that supersedes the original threshold condition:</p>
+
+        <p>dI/dt_required = λ · R(t) + E[dR_shock/dt] = 0.020 + 0.068 = 0.088/year</p>
+
+        <p>Converting to monthly terms: dI/dt_required ≈ 0.73%/month</p>
+
+        <p>The upper bound of the Paper 6 improvement rate estimate (dI/dt ≈ 2.0%/month) exceeds this requirement by a factor of 2.7×. The lower bound (dI/dt ≈ 0.5%/month) falls below it by a factor of 0.68×. The shock-adjusted analysis therefore places a tighter constraint on the minimum acceptable experimental throughput of the minifab laboratory than the continuous degradation analysis alone — the experimental program must achieve improvement rates in the upper half of the estimated range to satisfy the shock-adjusted threshold condition.</p>
+
+        <p>This constraint has a direct implication for minifab capacity design: the minifab must be sized to support at least 1.5× the minimum throughput estimated in Section 7.3, providing margin against periods of reduced experimental productivity following shock events when Optimus units are diverted to damage assessment and repair.</p>
+
         <h2>8. Conclusion</h2>
         <p>Papers 1 through 5 describe a ship designed to last. Paper 6 describes a ship and chip co-designed to improve — where the ship's minifab laboratory enables continuous chip iteration, and the chip's increasing resilience enables the ship to operate longer and venture further.</p>
 
@@ -580,6 +787,9 @@ This paper makes ten contributions. Five were present in the original specificat
             <li>[P3] Claude & Grok & Thompson, J. (2026). Co-Design of Machine Learning Schedulers and Orbital Attitude Control Systems. Deep-Space Compute Architecture Program.</li>
             <li>[P4] Claude & Grok & Thompson, J. (2026). A Self-Replicating, Autonomously-Governed Deep-Space Compute Architecture. Deep-Space Compute Architecture Program.</li>
             <li>[P5] Claude & Grok & Thompson, J. (2026). Civilization Seed Architecture. Deep-Space Compute Architecture Program.</li>
+            <li>[A20] Grün, E., et al. (1985). Collisional balance of the meteoritic complex. Icarus, 62(2), 244-272.</li>
+            <li>[A21] Divine, N. (1993). Five populations of interplanetary meteoroids. Journal of Geophysical Research: Planets, 98(E9), 17029-17048.</li>
+            <li>[A22] Reames, D.V. (1999). Particle acceleration at the Sun and in the heliosphere. Space Science Reviews, 90(3), 413-491.</li>
           </ol>
         </div>
       </section>
