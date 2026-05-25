@@ -27,6 +27,45 @@ h1, h2, h3, h4 {
   letter-spacing: -0.02em;
 }
 
+/* ===== Footer ===== */
+.footer {
+  background: var(--bg-section);
+  border-top: 1px solid var(--border);
+  padding: 3rem 0;
+  margin-top: 4rem;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2.5rem;
+}
+
+.footer-section h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.footer-section p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.footer-section a {
+  color: var(--accent-light);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-section a:hover {
+  color: var(--accent);
+}
+
 /* ===== Navbar ===== */
 .navbar {
   position: sticky;
