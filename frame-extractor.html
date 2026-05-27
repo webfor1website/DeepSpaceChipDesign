@@ -149,42 +149,35 @@
     
     <div class="extractor-header">
       <h1>Frame Extractor Tool</h1>
-      <p>Extract frames from videos at 20 fps using ffmpeg</p>
+      <p>One command. Enter URL, get frames. Automated.</p>
     </div>
 
     <div class="extractor-form">
       <div class="form-group">
-        <label for="videoUrl">Video URL or Local File Path</label>
-        <input type="text" id="videoUrl" placeholder="https://example.com/video.mp4 or C:\path\to\video.mp4" />
+        <label for="videoUrl">Video URL</label>
+        <input type="text" id="videoUrl" placeholder="https://example.com/video.mp4" />
       </div>
       
-      <div class="form-row">
-        <div class="form-group">
-          <label for="fps">Frames per Second</label>
-          <input type="number" id="fps" value="20" min="1" max="60" />
-        </div>
-        <div class="form-group">
-          <label for="outputDir">Output Directory</label>
-          <input type="text" id="outputDir" value="frames" placeholder="frames" />
-        </div>
+      <div class="form-group">
+        <label for="fps">Frames per Second (optional, default: 20)</label>
+        <input type="number" id="fps" value="20" min="1" max="60" />
       </div>
 
       <button class="btn-generate" onclick="generateCommand()">Generate Command</button>
 
       <div class="command-output" id="commandOutput">
-        <h3>Generated Command</h3>
+        <h3>Your Command</h3>
         <div class="command-block" id="commandBlock"></div>
         
-        <h3>Step-by-Step Instructions</h3>
-        <div class="instruction-step">Install ffmpeg if not already installed (see below)</div>
-        <div class="instruction-step">Download the Python script using the button below</div>
-        <div class="instruction-step">Place your video file in the same folder as the script, or note its full path</div>
-        <div class="instruction-step">Open terminal/command prompt in the folder containing the script</div>
-        <div class="instruction-step">Run the generated command</div>
-        <div class="instruction-step">Frames will be saved in the "frames" folder in the same directory</div>
+        <h3>What This Does (Automated)</h3>
+        <div class="instruction-step">Downloads the video automatically</div>
+        <div class="instruction-step">Extracts frames at your specified fps</div>
+        <div class="instruction-step">Creates a "frames" folder with all PNG frames</div>
+        <div class="instruction-step">Creates an HTML viewer to see all frames</div>
+        <div class="instruction-step">Opens the frames folder automatically</div>
         
         <div class="download-section">
-          <h3>Download Python Script</h3>
+          <h3>Download Script</h3>
           <a href="extract_frames.py" download class="btn-download">Download extract_frames.py</a>
         </div>
       </div>
@@ -193,15 +186,23 @@
     <div class="extractor-form">
       <h3>Requirements</h3>
       <ul style="color: #8892b0; line-height: 1.8;">
-        <li>Python 3.6 or higher</li>
-        <li>ffmpeg installed on your system</li>
+        <li>Python 3.6+ installed</li>
+        <li>ffmpeg installed (for frame extraction)</li>
       </ul>
       
       <h3 style="margin-top: 20px;">Install ffmpeg</h3>
       <div class="command-block">
+        Windows: Download from https://ffmpeg.org/download.html<br>
         macOS: brew install ffmpeg<br>
-        Linux: sudo apt install ffmpeg<br>
-        Windows: Download from https://ffmpeg.org/download.html
+        Linux: sudo apt install ffmpeg
+      </div>
+      
+      <h3 style="margin-top: 20px;">Usage</h3>
+      <div class="command-block">
+        1. Download the script<br>
+        2. Open terminal in the folder with the script<br>
+        3. Run: python extract_frames.py "YOUR_VIDEO_URL"<br>
+        4. Done! Frames folder opens automatically
       </div>
     </div>
   </div>
@@ -210,14 +211,13 @@
     function generateCommand() {
       const videoUrl = document.getElementById('videoUrl').value;
       const fps = document.getElementById('fps').value;
-      const outputDir = document.getElementById('outputDir').value;
 
       if (!videoUrl) {
         alert('Please enter a video URL');
         return;
       }
 
-      const command = `python extract_frames.py "${videoUrl}" --fps ${fps} --output ${outputDir}`;
+      const command = `python extract_frames.py "${videoUrl}" ${fps}`;
       document.getElementById('commandBlock').textContent = command;
       document.getElementById('commandOutput').classList.add('show');
     }

@@ -1,112 +1,100 @@
 #!/usr/bin/env python3
 """
-Video Frame Extraction Tool
-Extracts 20 frames per second from any video URL using ffmpeg
+Video Frame Extraction Tool - Automated
+Just enter a URL, it downloads, extracts frames, and opens the folder
 """
 
 import os
 import sys
 import subprocess
 import urllib.request
-import argparse
+import webbrowser
 from pathlib import Path
 
 
-def download_video(url, output_path):
-    """Download video from URL to local file"""
-    # Check if URL is actually a local file path
-    if os.path.exists(url):
-        print(f"Using local file: {url}")
-        print(f"Copying to: {os.path.abspath(output_path)}")
-        try:
-            import shutil
-            shutil.copy2(url, output_path)
-            print(f"File copied successfully to: {output_path}")
-            print(f"File size: {os.path.getsize(output_path)} bytes")
-            return True
-        except Exception as e:
-            print(f"Error copying file: {e}")
-            return False
-    
-    print(f"Downloading video from: {url}")
-    print(f"Saving to: {os.path.abspath(output_path)}")
-    try:
-        urllib.request.urlretrieve(url, output_path)
-        print(f"Video downloaded successfully to: {output_path}")
-        print(f"File size: {os.path.getsize(output_path)} bytes")
-        return True
-    except Exception as e:
-        print(f"Error downloading video: {e}")
-        print(f"Note: This script only works with direct video file URLs (MP4, AVI, etc.)")
-        print(f"For YouTube or streaming videos, use yt-dlp to download first")
-        return False
-
-
-def extract_frames(video_path, output_dir, fps=20):
-    """Extract frames from video using ffmpeg"""
-    # Create output directory if it doesn't exist
-    output_dir = os.path.abspath(output_dir)
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    
-    print(f"Output directory (absolute path): {output_dir}")
-    
-    # Build ffmpeg command
-    output_pattern = os.path.join(output_dir, "frame_%04d.png")
-    cmd = [
-        "ffmpeg",
-        "-i", video_path,
-        "-vf", f"fps={fps}",
-        output_pattern
-    ]
-    
-    print(f"Extracting frames at {fps} fps...")
-    print(f"Command: {' '.join(cmd)}")
-    
-    try:
-        subprocess.run(cmd, check=True)
-        print(f"Frames extracted successfully to {output_dir}")
-        
-        # Count extracted frames
-        frame_count = len([f for f in os.listdir(output_dir) if f.endswith('.png')])
-        print(f"Total frames extracted: {frame_count}")
-        print(f"Frame files are in: {output_dir}")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"Error extracting frames: {e}")
-        return False
-    except FileNotFoundError:
-        print("Error: ffmpeg not found. Please install ffmpeg first.")
-        print("Install with: brew install ffmpeg (macOS) or apt install ffmpeg (Linux)")
-        return False
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Extract 20 frames per second from video URL using ffmpeg"
-    )
-    parser.add_argument("url", help="Video URL to extract frames from")
-    parser.add_argument("--fps", type=int, default=20, help="Frames per second (default: 20)")
-    parser.add_argument("--output", default="frames", help="Output directory for frames (default: frames)")
-    parser.add_argument("--video-output", default="input_video.mp4", help="Temporary video file name (default: input_video.mp4)")
-    
-    args = parser.parse_args()
+def extract_frames(url, fps=20):
+    """Download video, extract frames, and open folder"""
+    # Create frames folder in current directory
+    frames_dir = os.path.abspath("frames")
+    Path(frames_dir).mkdir(parents=True, exist_ok=True)
     
     # Download video
-    if not download_video(args.url, args.video_output):
-        sys.exit(1)
+    print(f"Downloading video from: {url}")
+    video_path = "temp_video.mp4"
+    try:
+        urllib.request.urlretrieve(url, video_path)
+        print(f"Video downloaded: {os.path.getsize(video_path)} bytes")
+    except Exception as e:
+        print(f"Error downloading: {e}")
+        print("For local files, just drag and drop the video file onto this script")
+        return False
     
     # Extract frames
-    if extract_frames(args.video_output, args.output, args.fps):
-        # Clean up downloaded video
-        try:
-            os.remove(args.video_output)
-            print(f"Cleaned up temporary video file: {args.video_output}")
-        except:
-            pass
-        sys.exit(0)
-    else:
-        sys.exit(1)
+    print(f"Extracting frames at {fps} fps...")
+    output_pattern = os.path.join(frames_dir, "frame_%04d.png")
+    cmd = ["ffmpeg", "-i", video_path, "-vf", f"fps={fps}", output_pattern]
+    
+    try:
+        subprocess.run(cmd, check=True, capture_output=True)
+        print(f"Frames extracted to: {frames_dir}")
+        
+        # Count frames
+        frame_count = len([f for f in os.listdir(frames_dir) if f.endswith('.png')])
+        print(f"Total frames: {frame_count}")
+        
+        # Clean up video
+        os.remove(video_path)
+        
+        # Create simple HTML viewer
+        create_viewer(frames_dir, frame_count)
+        
+        # Open folder
+        if os.name == 'nt':  # Windows
+            os.startfile(frames_dir)
+        elif os.name == 'posix':  # Mac/Linux
+            subprocess.run(['open', frames_dir] if sys.platform == 'darwin' else ['xdg-open', frames_dir])
+        
+        print(f"\n✓ Done! Frames folder opened")
+        print(f"✓ HTML viewer created: {os.path.join(frames_dir, 'viewer.html')}")
+        return True
+        
+    except subprocess.CalledProcessError as e:
+        print(f"Error: ffmpeg not found or failed")
+        print("Install ffmpeg: brew install ffmpeg (Mac) or apt install ffmpeg (Linux)")
+        return False
+    except FileNotFoundError:
+        print("Error: ffmpeg not found. Install ffmpeg first.")
+        return False
+
+
+def create_viewer(frames_dir, frame_count):
+    """Create simple HTML viewer for frames"""
+    html = f"""<!DOCTYPE html>
+<html>
+<head><title>Frame Viewer</title></head>
+<body style="background:#000; margin:0; padding:20px;">
+<h1 style="color:#fff; text-align:center;">Extracted Frames ({frame_count} total)</h1>
+<div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+"""
+    for i in range(1, frame_count + 1):
+        html += f'<img src="frame_{i:04d}.png" style="max-width:200px; height:auto;">'
+    
+    html += """</div>
+</body>
+</html>"""
+    
+    with open(os.path.join(frames_dir, "viewer.html"), 'w') as f:
+        f.write(html)
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 2:
+        print("Usage: python extract_frames.py <video_url_or_file>")
+        print("Example: python extract_frames.py https://example.com/video.mp4")
+        print("         python extract_frames.py C:\\path\\to\\video.mp4")
+        sys.exit(1)
+    
+    url = sys.argv[1]
+    fps = int(sys.argv[2]) if len(sys.argv) > 2 else 20
+    
+    extract_frames(url, fps)
