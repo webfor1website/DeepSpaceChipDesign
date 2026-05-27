@@ -2,14 +2,43 @@
 """
 Video Frame Extraction Tool - Automated
 Just enter a URL, it downloads, extracts frames, and opens the folder
+Supports YouTube URLs via yt-dlp
 """
 
 import os
 import sys
 import subprocess
 import urllib.request
-import webbrowser
 from pathlib import Path
+
+
+def download_video(url, output_path):
+    """Download video from URL (supports YouTube via yt-dlp)"""
+    # Check if it's a YouTube URL
+    if 'youtube.com' in url or 'youtu.be' in url:
+        print(f"YouTube URL detected, using yt-dlp...")
+        try:
+            cmd = ['yt-dlp', '-o', output_path, url]
+            subprocess.run(cmd, check=True)
+            print(f"Video downloaded: {os.path.getsize(output_path)} bytes")
+            return True
+        except subprocess.CalledProcessError:
+            print("Error: yt-dlp failed. Install with: pip install yt-dlp")
+            return False
+        except FileNotFoundError:
+            print("Error: yt-dlp not found. Install with: pip install yt-dlp")
+            return False
+    
+    # Direct video file download
+    print(f"Downloading video from: {url}")
+    try:
+        urllib.request.urlretrieve(url, output_path)
+        print(f"Video downloaded: {os.path.getsize(output_path)} bytes")
+        return True
+    except Exception as e:
+        print(f"Error downloading: {e}")
+        print("For local files, just drag and drop the video file onto this script")
+        return False
 
 
 def extract_frames(url, fps=20):
@@ -19,14 +48,8 @@ def extract_frames(url, fps=20):
     Path(frames_dir).mkdir(parents=True, exist_ok=True)
     
     # Download video
-    print(f"Downloading video from: {url}")
     video_path = "temp_video.mp4"
-    try:
-        urllib.request.urlretrieve(url, video_path)
-        print(f"Video downloaded: {os.path.getsize(video_path)} bytes")
-    except Exception as e:
-        print(f"Error downloading: {e}")
-        print("For local files, just drag and drop the video file onto this script")
+    if not download_video(url, video_path):
         return False
     
     # Extract frames
@@ -90,8 +113,13 @@ def create_viewer(frames_dir, frame_count):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python extract_frames.py <video_url_or_file>")
-        print("Example: python extract_frames.py https://example.com/video.mp4")
+        print("Example: python extract_frames.py https://www.youtube.com/watch?v=VIDEO_ID")
+        print("         python extract_frames.py https://example.com/video.mp4")
         print("         python extract_frames.py C:\\path\\to\\video.mp4")
+        print("\nRequirements:")
+        print("- Python 3.6+")
+        print("- ffmpeg (for frame extraction)")
+        print("- yt-dlp (for YouTube videos): pip install yt-dlp")
         sys.exit(1)
     
     url = sys.argv[1]
