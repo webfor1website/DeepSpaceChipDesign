@@ -27,7 +27,10 @@ def download_video(url, output_path):
 def extract_frames(video_path, output_dir, fps=20):
     """Extract frames from video using ffmpeg"""
     # Create output directory if it doesn't exist
+    output_dir = os.path.abspath(output_dir)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
+    
+    print(f"Output directory (absolute path): {output_dir}")
     
     # Build ffmpeg command
     output_pattern = os.path.join(output_dir, "frame_%04d.png")
@@ -39,7 +42,7 @@ def extract_frames(video_path, output_dir, fps=20):
     ]
     
     print(f"Extracting frames at {fps} fps...")
-    print(f"Output directory: {output_dir}")
+    print(f"Command: {' '.join(cmd)}")
     
     try:
         subprocess.run(cmd, check=True)
@@ -48,6 +51,7 @@ def extract_frames(video_path, output_dir, fps=20):
         # Count extracted frames
         frame_count = len([f for f in os.listdir(output_dir) if f.endswith('.png')])
         print(f"Total frames extracted: {frame_count}")
+        print(f"Frame files are in: {output_dir}")
         return True
     except subprocess.CalledProcessError as e:
         print(f"Error extracting frames: {e}")
