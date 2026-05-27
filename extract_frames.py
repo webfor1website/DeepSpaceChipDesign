@@ -15,12 +15,16 @@ from pathlib import Path
 def download_video(url, output_path):
     """Download video from URL to local file"""
     print(f"Downloading video from: {url}")
+    print(f"Saving to: {os.path.abspath(output_path)}")
     try:
         urllib.request.urlretrieve(url, output_path)
-        print(f"Video downloaded to: {output_path}")
+        print(f"Video downloaded successfully to: {output_path}")
+        print(f"File size: {os.path.getsize(output_path)} bytes")
         return True
     except Exception as e:
         print(f"Error downloading video: {e}")
+        print(f"Note: This script only works with direct video file URLs (MP4, AVI, etc.)")
+        print(f"For YouTube or streaming videos, use yt-dlp to download first")
         return False
 
 
