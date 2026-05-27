@@ -154,8 +154,8 @@
 
     <div class="extractor-form">
       <div class="form-group">
-        <label for="videoUrl">Video URL</label>
-        <input type="url" id="videoUrl" placeholder="https://example.com/video.mp4" />
+        <label for="videoUrl">Video URL or Local File Path</label>
+        <input type="text" id="videoUrl" placeholder="https://example.com/video.mp4 or C:\path\to\video.mp4" />
       </div>
       
       <div class="form-row">
@@ -175,10 +175,13 @@
         <h3>Generated Command</h3>
         <div class="command-block" id="commandBlock"></div>
         
-        <h3>Instructions</h3>
-        <div class="instruction-step">Install ffmpeg if not already installed</div>
-        <div class="instruction-step">Download the Python script below</div>
-        <div class="instruction-step">Run the generated command in your terminal</div>
+        <h3>Step-by-Step Instructions</h3>
+        <div class="instruction-step">Install ffmpeg if not already installed (see below)</div>
+        <div class="instruction-step">Download the Python script using the button below</div>
+        <div class="instruction-step">Place your video file in the same folder as the script, or note its full path</div>
+        <div class="instruction-step">Open terminal/command prompt in the folder containing the script</div>
+        <div class="instruction-step">Run the generated command</div>
+        <div class="instruction-step">Frames will be saved in the "frames" folder in the same directory</div>
         
         <div class="download-section">
           <h3>Download Python Script</h3>

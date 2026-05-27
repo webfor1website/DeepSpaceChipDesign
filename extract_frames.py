@@ -14,6 +14,20 @@ from pathlib import Path
 
 def download_video(url, output_path):
     """Download video from URL to local file"""
+    # Check if URL is actually a local file path
+    if os.path.exists(url):
+        print(f"Using local file: {url}")
+        print(f"Copying to: {os.path.abspath(output_path)}")
+        try:
+            import shutil
+            shutil.copy2(url, output_path)
+            print(f"File copied successfully to: {output_path}")
+            print(f"File size: {os.path.getsize(output_path)} bytes")
+            return True
+        except Exception as e:
+            print(f"Error copying file: {e}")
+            return False
+    
     print(f"Downloading video from: {url}")
     print(f"Saving to: {os.path.abspath(output_path)}")
     try:
