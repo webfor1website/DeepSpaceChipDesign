@@ -149,7 +149,7 @@
     
     <div class="extractor-header">
       <h1>Frame Extractor Tool</h1>
-      <p>One command. Enter URL, get frames. Automated.</p>
+      <p>One command. Enter URL, get frames & PDFs. Automated.</p>
     </div>
 
     <div class="extractor-form">
@@ -173,6 +173,9 @@
         <div class="instruction-step">Downloads the video automatically</div>
         <div class="instruction-step">Extracts frames at your specified fps</div>
         <div class="instruction-step">Creates a "frames" folder with all PNG frames</div>
+        <div class="instruction-step">Converts frames to multi-page PDF(s)</div>
+        <div class="instruction-step">Splits PDFs if size exceeds 25MB</div>
+        <div class="instruction-step">Adds captions with source filename & timestamp</div>
         <div class="instruction-step">Creates an HTML viewer to see all frames</div>
         <div class="instruction-step">Opens the frames folder automatically</div>
         
@@ -189,21 +192,22 @@
         <li>Python 3.6+ installed</li>
         <li>ffmpeg installed (for frame extraction)</li>
         <li>yt-dlp installed (for YouTube videos): pip install yt-dlp</li>
+        <li>Pillow installed (for PDF conversion): pip install Pillow</li>
       </ul>
       
       <h3 style="margin-top: 20px;">Install Requirements</h3>
       <div class="command-block">
         ffmpeg: Download from https://ffmpeg.org/download.html<br>
-        yt-dlp: pip install yt-dlp
+        Python packages: pip install yt-dlp Pillow
       </div>
       
       <h3 style="margin-top: 20px;">Usage</h3>
       <div class="command-block">
         1. Download the script<br>
-        2. Install yt-dlp: pip install yt-dlp<br>
+        2. Install packages: pip install yt-dlp Pillow<br>
         3. Open terminal in the folder with the script<br>
         4. Run: python extract_frames.py "YOUR_VIDEO_URL"<br>
-        5. Done! Frames folder opens automatically
+        5. Done! Frames folder opens automatically with PDFs
       </div>
       
       <h3 style="margin-top: 20px;">Supported URLs</h3>
@@ -211,6 +215,13 @@
         YouTube: https://www.youtube.com/watch?v=VIDEO_ID<br>
         Direct files: https://example.com/video.mp4<br>
         Local files: C:\path\to\video.mp4
+      </div>
+      
+      <h3 style="margin-top: 20px;">Output</h3>
+      <div class="command-block">
+        PNG frames: frames/frame_0001.png, frame_0002.png, etc.<br>
+        PDF files: video_part1.pdf, video_part2.pdf, etc.<br>
+        HTML viewer: frames/viewer.html
       </div>
     </div>
   </div>
