@@ -9,7 +9,10 @@ import os
 import sys
 import subprocess
 import urllib.request
+import glob
 from pathlib import Path
+from datetime import datetime
+from PIL import Image
 
 
 def download_video(url, output_path):
@@ -110,6 +113,117 @@ def create_viewer(frames_dir, frame_count):
         f.write(html)
 
 
+def frames_to_pdf(frames_dir, source_filename="video"):
+    """Convert extracted frames to multi-page PDF(s)"""
+    print(f"\nConverting frames to PDF...")
+    
+    # Get all PNG files sorted by filename
+    png_files = sorted(glob.glob(os.path.join(frames_dir, "frame_*.png")))
+    
+    if not png_files:
+        print("No PNG frames found to convert")
+        return
+    
+    print(f"Found {len(png_files)} frames")
+    
+    # Estimate size and split if needed (25MB limit)
+    max_size_mb = 25
+    current_size = 0
+    current_frames = []
+    pdf_count = 0
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    for frame_path in png_files:
+        frame_size = os.path.getsize(frame_path) / (1024 * 1024)  # Convert to MB
+        
+        # Check if adding this frame would exceed limit
+        if current_size + frame_size > max_size_mb and current_frames:
+            # Save current batch
+            pdf_count += 1
+            save_pdf(current_frames, pdf_count, source_filename, timestamp)
+            current_size = 0
+            current_frames = []
+        
+        current_frames.append(frame_path)
+        current_size += frame_size
+    
+    # Save remaining frames
+    if current_frames:
+        pdf_count += 1
+        save_pdf(current_frames, pdf_count, source_filename, timestamp)
+    
+    print(f"\n✓ PDF conversion complete")
+    print(f"✓ Created {pdf_count} PDF file(s)")
+    print(f"✓ Average frames per PDF: {len(png_files) // pdf_count if pdf_count > 0 else 0}")
+    print(f"✓ Estimated size per PDF: ~{max_size_mb} MB")
+
+
+def save_pdf(frames, part_num, source_filename, timestamp):
+    """Save a batch of frames to a PDF file"""
+    output_path = f"{source_filename}_part{part_num}.pdf"
+    
+    # Open first image to get dimensions
+    img = Image.open(frames[0])
+    width, height = img.size
+    
+    # Create PDF with captions
+    pdf_images = []
+    for frame_path in frames:
+        img = Image.open(frame_path)
+        
+        # Add caption to image
+        captioned = add_caption(img, source_filename, timestamp)
+        pdf_images.append(captioned)
+    
+    # Save as PDF
+    pdf_images[0].save(
+        output_path,
+        save_all=True,
+        append_images=pdf_images[1:],
+        save_format='PDF',
+        resolution=100.0
+    )
+    
+    file_size = os.path.getsize(output_path) / (1024 * 1024)
+    print(f"  Created: {output_path} ({len(frames)} frames, {file_size:.2f} MB)")
+
+
+def add_caption(img, source_filename, timestamp):
+    """Add caption to image with source filename and timestamp"""
+    from PIL import ImageDraw, ImageFont
+    
+    # Convert to RGB if necessary
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
+    
+    # Create a copy to avoid modifying original
+    img_copy = img.copy()
+    draw = ImageDraw.Draw(img_copy)
+    
+    # Try to use a default font
+    try:
+        font = ImageFont.truetype("arial.ttf", 20)
+    except:
+        font = ImageFont.load_default()
+    
+    # Add caption at bottom
+    caption = f"{source_filename} - {timestamp}"
+    text_bbox = draw.textbbox((0, 0), caption, font=font)
+    text_width = text_bbox[2] - text_bbox[0]
+    
+    # Draw semi-transparent background for caption
+    caption_height = 30
+    overlay = Image.new('RGBA', (img_copy.width, caption_height), (0, 0, 0, 180))
+    img_copy.paste(overlay, (0, img_copy.height - caption_height), overlay)
+    
+    # Draw text
+    text_x = (img_copy.width - text_width) // 2
+    text_y = img_copy.height - caption_height + 5
+    draw.text((text_x, text_y), caption, fill=(255, 255, 255), font=font)
+    
+    return img_copy
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python extract_frames.py <video_url_or_file>")
@@ -120,9 +234,15 @@ if __name__ == "__main__":
         print("- Python 3.6+")
         print("- ffmpeg (for frame extraction)")
         print("- yt-dlp (for YouTube videos): pip install yt-dlp")
+        print("- Pillow (for PDF conversion): pip install Pillow")
         sys.exit(1)
     
     url = sys.argv[1]
     fps = int(sys.argv[2]) if len(sys.argv) > 2 else 20
     
-    extract_frames(url, fps)
+    # Extract frames first
+    if extract_frames(url, fps):
+        # Convert frames to PDF
+        frames_dir = os.path.abspath("frames")
+        source_filename = os.path.splitext(os.path.basename(url))[0] if '://' not in url else "video"
+        frames_to_pdf(frames_dir, source_filename)
